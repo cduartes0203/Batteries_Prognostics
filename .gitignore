@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.db
+*.xlsx
 *.csv
 *.zip
 *.pkl
