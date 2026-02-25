@@ -1,14 +1,14 @@
 import numpy as np
 import math
 from Functions.RLS import *
-from Functions.RTLO import *
+from Functions.RTLO_R1 import *
 
 def euclidian_dist(x1,x2):
     return np.linalg.norm(x1 - x2,ord=None)
 
 class DataCloud:
 	N=0
-	def __init__(self,x,ID,nS=1,nI=1,nR=1,nO=1,N1=1,N2=1,N3=1,tau=1,decay=1):
+	def __init__(self,x,ID,nS=1,nI=1,nR=1,nO=1,ηS=[1,1,1],tau=1,decay=1):
 		self.ID = ID
 		self.track = [ID]
 		self.merged = False
@@ -23,13 +23,13 @@ class DataCloud:
 		self.nI = nI
 		self.nR = nR
 		self.nO = nO
-		self.N1 = N1
-		self.N2 = N2
-		self.N3 = N3
+		self.N1 = ηS[0]
+		self.N2 = ηS[1]
+		self.N3 = ηS[2]
 		self.decay = decay
 		self.tau = tau
 		self.rnn = RTLO(self.nI, self.nR, self.nO,
-						self.N1, self.N2, self.N3, self.tau, self.decay)
+						[self.N1, self.N2, self.N3], self.tau, self.decay)
 		self.x = []
 		self.t = []
 		self.R = 0
@@ -103,7 +103,8 @@ class DataCloud:
 		return self.specificity*self.coverage
 		
 class AutoCloud:
-	def __init__(self,m,nS=1,nI=1,nR=1,nO=1,N1=1,N2=1,N3=1,
+	def __init__(self,m,nS=1,nI=1,nR=1,nO=1,ηS=[0.1,0.1,0.1],
+			  #N1=1,N2=1,N3=1,
 			  tau=1,decay=1,eol=0,fator=1,st=0,ep=0.1,wta=False):
 		
 		self.st = st
@@ -111,9 +112,9 @@ class AutoCloud:
 		self.nI = nI
 		self.nR = nR
 		self.nO = nO
-		self.N1 = N1
-		self.N2 = N2
-		self.N3 = N3
+		self.N1 = ηS[0]
+		self.N2 = ηS[1]
+		self.N3 = ηS[2]
 		self.tau = tau
 		self.eol = eol
 		self.decay = decay
@@ -121,7 +122,7 @@ class AutoCloud:
 
 		self.g = 1
 		self.gCreated = 1
-		self.c= np.array([DataCloud(np.array([0]),self.gCreated,self.nS,self.nI,self.nR,self.nO,self.N1,self.N2,self.N3,self.tau,self.decay)],dtype=DataCloud)
+		self.c= np.array([DataCloud(np.array([0]),self.gCreated,self.nS,self.nI,self.nR,self.nO,[self.N1,self.N2,self.N3],self.tau,self.decay)],dtype=DataCloud)
 		self.alfa= np.array([0.0],dtype=float)
 		self.intersection = np.zeros((1,1),dtype=int)
 		self.listIntersection = np.zeros((1),dtype=int)
@@ -174,14 +175,13 @@ class AutoCloud:
 			if w > wMax:
 				wMax = w
 				Best_cloud = cloud
-
 		if self.win_all:
 			#for i,cloud in enumerate(self.c):
 			#	cloud.rnn.adapt(y,z,1)
-			Best_cloud.rnn.adapt(y,z,1)
+			Best_cloud.rnn.fit(y,z)
 		if not self.win_all:
 			for i,cloud in enumerate(self.c):
-				cloud.rnn.adapt(y,z,wS[i])
+				cloud.rnn.fit(y,z)
 
 	def predict(self,y):
 		#print('gs:',self.g)
@@ -294,12 +294,12 @@ class AutoCloud:
 				trackJ = self.c[j].track
 				varianceI = self.c[i].variance
 				varianceJ = self.c[j].variance
-				winI = self.c[i].rnn.w_in
-				winJ = self.c[j].rnn.w_in
-				wrecI = self.c[i].rnn.w_rec
-				wrecJ = self.c[j].rnn.w_rec
-				woutI = self.c[i].rnn.w_out
-				woutJ = self.c[j].rnn.w_out
+				winI = self.c[i].rnn.wIN
+				winJ = self.c[j].rnn.wIN
+				wrecI = self.c[i].rnn.wHS
+				wrecJ = self.c[j].rnn.wHS
+				woutI = self.c[i].rnn.wOUT
+				woutJ = self.c[j].rnn.wOUT
 				hiI = self.c[i].rnn.hI
 				hiJ = self.c[j].rnn.hI
 				#print(self.c[i].ID,np.max(self.c[i].R),self.k)
@@ -330,12 +330,12 @@ class AutoCloud:
 					meant = ((nI * meantI) + (nJ * meantJ))/(nI + nJ)
 					variance = ((nI - 1) * varianceI + (nJ - 1) * varianceJ)/(nI + nJ - 2)
 					tipicality = ((nI*tipicalityI)+(nJ*tipicalityJ))/(nI + nJ)
-					w_in = ((winI*tipicalityI)+(winJ*tipicalityJ))/(tipicalityI+tipicalityJ)
-					w_rec = ((wrecI*tipicalityI)+(wrecJ*tipicalityJ))/(tipicalityI+tipicalityJ)
-					w_out = ((woutI*tipicalityI)+(woutJ*tipicalityJ))/(tipicalityI+tipicalityJ)
+					wIN = ((winI*tipicalityI)+(winJ*tipicalityJ))/(tipicalityI+tipicalityJ)
+					wHS = ((wrecI*tipicalityI)+(wrecJ*tipicalityJ))/(tipicalityI+tipicalityJ)
+					wOUT = ((woutI*tipicalityI)+(woutJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 					hI = ((hiI*tipicalityI)+(hiJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 
-					newCloud = DataCloud(np.array([0]),self.gCreated,self.nS,self.nI,self.nR,self.nO,self.N1,self.N2,self.N3,self.tau,self.decay)
+					newCloud = DataCloud(np.array([0]),self.gCreated,self.nS,self.nI,self.nR,self.nO,[self.N1,self.N2,self.N3],self.tau,self.decay)
 					for id in trackI:
 						newCloud.track.append(id)
 					for id in trackJ:
@@ -375,12 +375,12 @@ class AutoCloud:
 						newCloud.xI = self.c[j].xI
 						newCloud.xF = self.c[i].xF
 					#newCloud.R = np.array(newCloud.R,radius)
-					#print(newCloud.rnn.w_in)
-					newCloud.rnn.w_in = w_in
-					#print(newCloud.rnn.w_in)
+					#print(newCloud.rnn.wIN)
+					newCloud.rnn.wIN = wIN
+					#print(newCloud.rnn.wIN)
 
-					newCloud.rnn.w_rec = w_rec
-					newCloud.rnn.w_out = w_out
+					newCloud.rnn.wHS = wHS
+					newCloud.rnn.wOUT = wOUT
 					newCloud.rnn.hI = hI
 					newCloud.merge = f'G{self.gCreated}: G{idI}+G{idJ}'
 
@@ -424,7 +424,7 @@ class AutoCloud:
 		self.listIntersection = np.zeros((np.size(self.c)),dtype=int)
 		if self.k==1:
 			self.c[0] = DataCloud(X,self.gCreated,self.nS,self.nI,
-						 self.nR,self.nO,self.N1,self.N2,self.N3,self.tau,self.decay)
+						 self.nR,self.nO,[self.N1,self.N2,self.N3],self.tau,self.decay)
 			self.c[0].x.append(X)
 			self.c[0].t.append(self.k)
 			self.c[0].xI = X
@@ -496,7 +496,7 @@ class AutoCloud:
 			if(createCloud):
 				self.gCreated = self.gCreated + 1
 				self.c = np.append(self.c,DataCloud(X,self.gCreated,self.nS,self.nI,
-						 self.nR,self.nO,self.N1,self.N2,self.N3,self.tau,self.decay))
+						 self.nR,self.nO,[self.N1,self.N2,self.N3],self.tau,self.decay))
 				self.listIntersection = np.insert(self.listIntersection,i,1)
 				self.matrixIntersection = np.pad(self.matrixIntersection, ((0,1),(0,1)), 'constant', constant_values=(0)) 
 				self.c[-1].x.append(X)
@@ -547,7 +547,7 @@ class AutoCloud:
 			if createCloud:
 				self.gCreated = self.gCreated + 1
 				self.c = np.append(self.c,DataCloud(X,self.gCreated,self.nS,self.nI,
-						 self.nR,self.nO,self.N1,self.N2,self.N3,self.tau,self.decay))
+						 self.nR,self.nO,[self.N1,self.N2,self.N3],self.tau,self.decay))
 				self.c[-1].x.append(X)
 				self.c[-1].xI = X
 				self.c[-1].R = 0

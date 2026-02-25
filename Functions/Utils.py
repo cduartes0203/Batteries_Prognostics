@@ -2,6 +2,8 @@
 import numpy as np
 import pandas as pd
 import scipy.io
+import pickle
+
 from scipy import signal
 from scipy.stats import entropy, kurtosis, entropy
 from scipy.signal import hilbert, chirp
@@ -689,3 +691,8 @@ def process_input(df_RS,df_HI,nRS,nHI=None):
     HI = np.array(HI).T
     HI = HI[-nHI:].T
     return RS, HI
+
+def read_pkl(path):
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    return data
