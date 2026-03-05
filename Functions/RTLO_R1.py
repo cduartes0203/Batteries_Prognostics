@@ -15,7 +15,7 @@ class RTLO:
         self.ΔHS = np.zeros((nHS, nHS))
         self.ΔIN = np.zeros((nHS, nIN))
         self.xI = np.zeros(nIN)
-        self.ηS = ηS
+        self.ηS = np.array(ηS)
         self.τ = τ
         self.h0 = 0
         self.hI = np.zeros(nHS)
@@ -23,6 +23,8 @@ class RTLO:
         self.ht = np.zeros(nHS)
         self.k = 0
         self.u = None
+        self.decay = decay
+
 
         # Initialize weights:
         self.wIN = 0.1*(np.random.rand(nHS, nIN) - 1)
@@ -38,8 +40,9 @@ class RTLO:
         self.b = np.random.randn(nHS, nOUT)/nOUT**0.5
 
     def fit(self, x, y, tip=1):
+        self.ηS = self.ηS/(1 + self.decay*self.k)
         η1,η2,η3 = self.ηS
-
+        
         self.u = np.dot(self.nHS,self.hI) + np.dot(self.wIN,x)
         self.hF = self.hI + (1/self.τ)*(-self.hI + f(self.u))
         yP = np.dot(self.wOUT, self.hF)
