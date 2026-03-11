@@ -1,10 +1,11 @@
 import numpy as np
 import math
 from Functions.RLS import *
-from Functions.RTLO_R1 import *
+from Testing.RTLO import *
 
 def euclidian_dist(x1,x2):
     return np.linalg.norm(x1 - x2,ord=None)
+
 
 class DataCloud:
 	N=0
@@ -29,12 +30,13 @@ class DataCloud:
 		self.decay = decay
 		self.tau = tau
 		self.rnn = RTLO(self.nI, self.nR, self.nO,
-						[self.N1, self.N2, self.N3], self.tau, self.decay)
-		self.x = []
+					[self.N1, self.N2, self.N3], self.tau, self.decay)
+		self.x = [x]
+		self.rul = np.array([])
 		self.t = []
 		self.R = 0
-		self.xI = None
-		self.xF = None
+		self.xI = x
+		self.xF = x
 		self.Rmax = 0
 		self.specificity = 0
 		self.coverage = 0

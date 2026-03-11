@@ -15,85 +15,43 @@ def cm(x):
     return x/2.54
 
 def plot_RUL_CI(teda, startX=None, startY=None, endX=None, endY=None,
-                anchor=None, w=5.5, h=2, out=None, name='Name',
-                lw1=1.5, lw2=1, mk1=3, mk2=1.5, ftcks=7, flbl=8.5, fttl=8, flgnd=7,
-                dotsize=2, loc=None, rect=[0, 0, 1, 1], png=True, ncol=None, tol=25,rls=False):
-
-    if ncol is None:
-        ncol = 2 if teda.gCreated > 4 else 1
-
-    ext = '.png' if png else '.eps'
+                anchor=None, w=5.5, h=2, out=None, name='Name', lw1=1.5,
+                lw2=1, mk1=3, mk2=6, ftcks=7, flbl=8.5, fttl=8, flgnd=7,
+                loc=None, rect=[0, 0, 1, 1], ncol=1, tol=25):
 
     rulR = teda.rulR
     rulP = teda.rulP
     rulL = teda.rulL
     rulU = teda.rulU
-    
-    if rls: eolRUL = rulP[-1]
-    else: eolRUL = teda.rulP[int(teda.eolX - teda.nI)]
     x = teda.cycleP
-    end = np.where(teda.cycleP == teda.eolX)[0][0] + 1
 
-    size = int(teda.eolX/6)
-    while size%5!=0:
-        size=size+1
+    eolX = teda.eolX
+    eolY = rulP[np.where(x==eolX)[0][0]]
+    end = np.where(x==eolX)[0][0] +1
 
-    # Organizando os dados por granulação
-    activation = []
-    for arr in teda.cloud_activation2[:end]:
-        aux = np.array([None for _ in range(teda.gCreated + 1)])
-        for k in range(len(arr)):
-            aux[int(arr[k])] = int(arr[k])
-        activation.append(aux)
-    activation = np.array(activation).T
-    qtd = len(activation) - 1
+    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(teda.c))
+    colors = [cmap(i) for i in range(len(teda.c))]
 
-    names = [f'G{i + 1}' for i in range(qtd)]
-    xr, yr = [[] for _ in range(qtd)], [[] for _ in range(qtd)]
-    for i in range(qtd):
-        gran = activation[i + 1]
-        for l in range(len(gran)):
-            if gran[l] == i + 1:
-                yr[i].append(rulP[l])
-                xr[i].append(x[l])
-
-    # Limites dos eixos
-    if startX is None:
-        startX = 0
-    if endX is None:
-        endX = teda.eolX + 5
-    if startY is None:
-        startY = eolRUL - 3
-    if endY is None:
-        endY = np.max(teda.rulP) - 2.5
-
-    # Inicializa figura e eixo
     fig, ax = plt.subplots(figsize=(w, h))
 
-    # Linhas principais
-    ax.plot(x[:end], rulR[:end], linestyle='-', linewidth=lw1, color='black', label="R-RUL")
-    ax.plot(x[:end], rulU[:end], linestyle='--', linewidth=lw1, color='blue')
-    ax.plot(x[:end], rulL[:end], linestyle='--', linewidth=lw1, color='blue', label='Uncertainty')
     ax.fill_between(x[:end], (1 - tol / 100) * rulR[:end], (1 + tol / 100) * rulR[:end],
-                    color='skyblue', alpha=0.25, label=f"T-{tol}%", linewidth=lw1)
-    ax.plot([teda.eolX, teda.eolX], [-1, np.max(teda.rulU) * 1.2], color='black', linestyle=':', linewidth=lw2)
-    ax.plot([-200, 200], [eolRUL, eolRUL], color='black', linestyle=':', linewidth=lw2)
+                    color='gray', alpha=0.25, label=f"T-{tol}%", linewidth=lw1)
+    ax.fill_between(x[:end], rulU[:end], rulL[:end],
+                    color='skyblue', alpha=0.25, label=f"Uncertainty", linewidth=lw1)
+    ax.plot([eolX, eolX], [-10, np.max(teda.rulU) * 1.2], color='black', linestyle='--', linewidth=lw2)
+    ax.plot([x[0], x[-1]], [eolY,eolY], color='black', linestyle='--', linewidth=lw2)
+    
+    ax.plot(x[:end], rulR[:end], linestyle='-', linewidth=lw1, color='black', label="R-RUL")
+    ax.plot(x[:end], rulP[:end], linestyle='-', linewidth=lw1, color='blue', label="P-RUL")
+    ax.plot(x[:end], rulU[:end], linestyle='-', linewidth=lw2, color='blue')
+    ax.plot(x[:end], rulL[:end], linestyle='-', linewidth=lw2, color='blue')
 
-    for i in range(len(xr)):
-        ax.plot(xr[i], yr[i], linestyle=' ', marker='o', markersize=dotsize, label=names[i])
 
-    ax.plot(teda.eolX, eolRUL, marker='x', color='black', markersize=mk1,
-            linestyle='', markeredgewidth=mk2, label='EoL')
-
-    # Ajustes visuais
-    if len(teda.cycleP) >=80: xticks = [i * 30 for i in range(10)] +[teda.eolX]
-    if len(teda.cycleP) <80: xticks = [i * 10 for i in range(10)] +[teda.eolX]
-    if teda.eolX!=150: 
-        if 150 in xticks: xticks.remove(150)
-    if teda.eolX!=40: 
-        if 40 in xticks: xticks.remove(40)
-        
-    ax.set_xticks(sorted(xticks))
+    for i,cloud in enumerate(teda.c):
+        gx, gy = np.array(cloud.t)+teda.st-1, cloud.rul
+        ax.plot(gx, gy, marker='o', color=colors[i], markersize=mk1,
+            linestyle='', label=f'G{cloud.ID}')
+    ax.plot(eolX, eolY, marker='x', color='black', markersize=mk2, linestyle='', markeredgewidth=mk2/3, label='EoL')
     ax.set_xlim(startX, endX)
     ax.set_ylim(startY, endY)
     ax.set_xlabel("Cycle", fontsize=flbl)
@@ -102,15 +60,13 @@ def plot_RUL_CI(teda, startX=None, startY=None, endX=None, endY=None,
     ax.tick_params(axis='both', labelsize=ftcks, colors='black')
     ax.grid(True, linewidth=0.5)
 
-    # Legenda
     ax.legend(fontsize=flgnd, framealpha=0.85, loc=loc, bbox_to_anchor=anchor, ncol=ncol, columnspacing=0.7)
 
-    # Layout final
     fig.tight_layout(rect=rect)
 
     # Salvar
-    if out is not None and name != 'Name':
-        fig.savefig(out + 'RUL' + name + ext, dpi=500, transparent=False)
+    if out is not None:
+        fig.savefig(out, dpi=500, transparent=False)
 
     plt.show()
 
