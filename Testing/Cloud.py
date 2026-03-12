@@ -97,7 +97,7 @@ class DataCloud:
 		n = len(self.mean)
 		vR = ((math.pi**(n/2))/(math.gamma((n/2)+1)))*(self.R**n)
 		vMax = ((math.pi**(n/2))/(math.gamma((n/2)+1)))*(self.Dmax**n)
-		self.specificity = 1-(vR/vMax)
+		self.specificity = max(0,1-(vR/vMax))
 	
 	def calc_cv(self,k):	
 		self.coverage = self.cardinality/(k-1)

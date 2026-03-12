@@ -363,7 +363,7 @@ class AutoCloud:
 				norm_typicality = typicality/(self.k-2)
 				cloud.eccAn = eccentricity
 				#R = np.sqrt((((self.m**2)+1)*n*variance/n)-variance)
-				R = np.sqrt(np.abs(variance/cloud.n) *((self.m**2)*(cloud.n+1)+1))
+				#R = np.sqrt(np.abs(variance/cloud.n) *((self.m**2)*(cloud.n+1)+1))
 				if(norm_eccentricity<=(self.m**2 +1)/(2*n)):
 					createCloud= False
 					cloud.updateDataCloud(n,mean,meant,variance,typicality)
