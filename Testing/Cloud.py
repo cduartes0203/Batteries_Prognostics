@@ -14,9 +14,13 @@ class DataCloud:
 		self.track = [ID]
 		self.merged = False
 		self.merge = None
+		self.m = None
 		self.n=1
 		self.mean=x
-		self.meant=np.array(x).dot(np.array(x))
+		#self.meant=np.array(x).dot(np.array(x))
+		#print(x,type(x))
+		#self.meant=x.dot(x)
+		self.meant=np.array([0])
 		self.variance=0
 		self.pertinency=1
 		self.tipicality=1e-12
@@ -35,6 +39,10 @@ class DataCloud:
 		self.rul = np.array([])
 		self.t = []
 		self.R = 0
+		self.Rvec = np.array([0])
+		self.Mvec = np.array([0])
+		self.DtM = np.array([0])
+		self.DtX = np.array([0])
 		self.xI = x
 		self.xF = x
 		self.Rmax = 0
@@ -58,6 +66,16 @@ class DataCloud:
 		self.tipicality=tipicality
 		self.cardinality=self.cardinality + 1
 
+	def calc_R(self):
+		v = self.variance
+		n = self.n
+		m = self.m
+		#print('R:',((v/n) * (((m**2)*(n+1))+1)))
+		R = np.sqrt(np.abs(v/n) * (((m**2)*(n+1))+1))
+		self.Rvec = np.append(self.Rvec,R)
+		if R >= self.R: 
+			self.R = R
+		
 	def calc_Rmax(self):
 		R1 = euclidian_dist(self.mean, self.xI)
 		R2 = euclidian_dist(self.mean, self.xF)
@@ -67,8 +85,8 @@ class DataCloud:
 		if self.Rmax > self.R: self.R = self.Rmax
 		#self.Rmax = Rmax
 
-	def calc_Dmax(self,xR,xF):
-		D1 = euclidian_dist(self.mean, xR)
+	def calc_Dmax(self,xI,xF):
+		D1 = euclidian_dist(self.mean, xI)
 		D2 = euclidian_dist(self.mean, xF)
 		if D1 > D2: Dmax = D1
 		else: Dmax = D2

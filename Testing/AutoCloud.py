@@ -61,14 +61,17 @@ class AutoCloud:
 		self.εR = []
 		self.win_all = wta
 		self.ChangePoint = []
-		self.xR = 0
+		self.xI = 0
 		self.xF = 0
+		self.mean = np.zeros(nS)
 		self.Dmax = 0
+		self.Dvec = np.array([])
 	
 	def CreateCloud(self,x):
 		self.gCreated = self.gCreated + 1
 		cloud = DataCloud(x,self.gCreated,self.nI,self.nR,self.nO,
 					[self.N1,self.N2,self.N3],self.tau,self.decay)
+		cloud.m = self.m
 		self.c = np.append(self.c,cloud)
 
 	def add_rulR2(self,n):
@@ -249,6 +252,7 @@ class AutoCloud:
 
 					newCloud = DataCloud(x,self.gCreated,self.nI,self.nR,self.nO,
 									[self.N1,self.N2,self.N3],self.tau,self.decay)
+					newCloud.m = self.m
 
 					for id in trackI:
 						newCloud.track.append(id)
@@ -257,7 +261,8 @@ class AutoCloud:
 						
 					newCloud.updateDataCloud(n,mean,meant,variance,tipicality)
 					newCloud.R = radius
-					
+					newCloud.Rvec[0] = radius
+
 					x = self.c[i].x + self.c[j].x
 					t = self.c[i].t + self.c[j].t
 					mat = np.array(list(zip(t,x)), dtype=object)
@@ -315,8 +320,12 @@ class AutoCloud:
 	def run(self,X):
 		self.aux = np.array([])
 		self.aux2 = np.array([])
-		if self.k == 1: self.xR = X
+		if self.k == 1: self.xI = X
 		self.listIntersection = np.zeros((np.size(self.c)),dtype=int)
+
+		mean = ((self.k-1)/self.k)*self.mean + (1/self.k)*X
+		self.mean = mean
+
 		if self.k==1:
 			self.CreateCloud(X)
 			self.c[0].t.append(self.k)
@@ -330,8 +339,10 @@ class AutoCloud:
 			self.c[0].t.append(self.k)
 			v = self.c[0].variance
 			n = self.c[0].n
-			R = math.sqrt((((self.m**2)+1)*n*v/n)-v)
-			self.c[0].R = R
+			#R = math.sqrt((((self.m**2)+1)*n*v/n)-v)
+			#R = np.sqrt()
+			#self.c[0].R = R
+			self.c[0].calc_R()
 			self.c[0].cardinality = self.c[0].cardinality+1
 			self.aux = np.append(self.aux,1)
 			self.aux2 = np.append(self.aux,self.c[0].track)
@@ -351,7 +362,8 @@ class AutoCloud:
 				norm_eccentricity = eccentricity/2
 				norm_typicality = typicality/(self.k-2)
 				cloud.eccAn = eccentricity
-				R = math.sqrt((((self.m**2)+1)*n*variance/n)-variance)
+				#R = np.sqrt((((self.m**2)+1)*n*variance/n)-variance)
+				R = np.sqrt(np.abs(variance/cloud.n) *((self.m**2)*(cloud.n+1)+1))
 				if(norm_eccentricity<=(self.m**2 +1)/(2*n)):
 					createCloud= False
 					cloud.updateDataCloud(n,mean,meant,variance,typicality)
@@ -360,7 +372,8 @@ class AutoCloud:
 					cloud.x.append(X)
 					cloud.t.append(self.k)
 					cloud.xF = X
-					cloud.R = R
+					#cloud.R = R
+					cloud.calc_R()
 					self.aux = np.append(self.aux,cloud.ID)
 					self.aux2 = np.append(self.aux2,cloud.track)
 					self.cloud_activation.append(cloud)
@@ -380,8 +393,13 @@ class AutoCloud:
 				self.cloud_activation.append(self.c[-1])
 			self.mergeClouds(X)
 
-		if self.Dmax < euclidian_dist(x1=self.xR, x2=X):
-			self.Dmax = euclidian_dist(x1=self.xR, x2=X)
+		DxI = euclidian_dist(x1=self.mean, x2=self.xI)
+		DxF = euclidian_dist(x1=self.mean, x2=X)
+		Dmax = max(DxI,DxF)
+		self.Dvec = np.append(self.Dvec,Dmax)
+
+		if self.Dmax < Dmax:
+			self.Dmax = Dmax
 			self.xF = X
 
 		self.cycleP = np.append(self.cycleP,self.st+self.k-1)
