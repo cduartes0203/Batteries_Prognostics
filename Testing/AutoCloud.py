@@ -64,6 +64,8 @@ class AutoCloud:
 		self.xI = 0
 		self.xF = 0
 		self.mean = np.zeros(nS)
+		self.meant = 0
+		self.variance = 0
 		self.Dmax = 0
 		self.Dvec = np.array([])
 	
@@ -232,13 +234,19 @@ class AutoCloud:
 				woutJ = self.c[j].rnn.wOUT
 				hiI = self.c[i].rnn.hI
 				hiJ = self.c[j].rnn.hI
+				rI = self.c[i].R
+				rJ = self.c[j].R
+				spI = self.c[i].sp
+				spJ = self.c[j].sp
+				spSumI = self.c[i].spSum
+				spSumJ = self.c[j].spSum
+				covI = self.c[i].cov
+				covJ = self.c[j].cov
+				dIJ = euclidian_dist(x1=meanI, x2=meanJ)
 				nIntersc = self.matrixIntersection[i,j]
 
 				if (nIntersc > (nI - nIntersc) or nIntersc > (nJ - nIntersc)):
-					rI = np.max(self.c[i].R)
-					rJ = np.max(self.c[j].R)
-					if rI >= rJ: radius = rI
-					else: radius = rJ
+	
 					merge = True
 					self.gCreated = self.gCreated + 1
 					n = nI + nJ - nIntersc
@@ -246,6 +254,13 @@ class AutoCloud:
 					meant = ((nI * meantI) + (nJ * meantJ))/(nI + nJ)
 					variance = ((nI - 1) * varianceI + (nJ - 1) * varianceJ)/(nI + nJ - 2)
 					tipicality = ((nI*tipicalityI)+(nJ*tipicalityJ))/(nI + nJ)
+					sp = ((nI*spI)+(nJ*spJ))/(nI + nJ)
+					#spSum = ((nI*spSumI)+(nJ*spSumJ))/(nI + nJ)
+					spSum = ((nI*tipicalityI)+(nJ*tipicalityJ))/(tipicalityI + tipicalityJ)
+					cov = n/self.k
+
+					R = (rI+rJ+dIJ)/2
+
 					wIN = ((winI*tipicalityI)+(winJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 					wHS = ((wrecI*tipicalityI)+(wrecJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 					wOUT = ((woutI*tipicalityI)+(woutJ*tipicalityJ))/(tipicalityI+tipicalityJ)
@@ -261,8 +276,11 @@ class AutoCloud:
 						newCloud.track.append(id)
 						
 					newCloud.updateDataCloud(n,mean,meant,variance,tipicality)
-					newCloud.R = radius
-					newCloud.Rvec[0] = radius
+					newCloud.sp = sp
+					newCloud.spSum = spSum
+					newCloud.cov = cov
+					newCloud.R = R
+					newCloud.Rvec[0] = newCloud.R
 
 					x_ = self.c[i].x + self.c[j].x
 					t = self.c[i].t + self.c[j].t
@@ -274,24 +292,9 @@ class AutoCloud:
 					x_ = result[:, 1].tolist()
 					newCloud.x = x_
 					newCloud.t = t
-					dist = 0
-					if euclidian_dist(self.c[i].xI,self.c[i].xF) > dist:
-						dist = euclidian_dist(self.c[i].xI,self.c[i].xF)
-						newCloud.xI = self.c[i].xI
-						newCloud.xF = self.c[i].xF
-					elif euclidian_dist(self.c[j].xI,self.c[j].xF) > dist:
-						dist = euclidian_dist(self.c[j].xI,self.c[j].xF)
-						newCloud.xI = self.c[j].xI
-						newCloud.xF = self.c[j].xF
-					elif euclidian_dist(self.c[i].xI,self.c[j].xF) > dist:
-						dist = euclidian_dist(self.c[i].xI,self.c[j].xF)
-						newCloud.xI = self.c[i].xI
-						newCloud.xF = self.c[j].xF
-					elif euclidian_dist(self.c[j].xI,self.c[i].xF) > dist:
-						dist = euclidian_dist(self.c[j].xI,self.c[i].xF)
-						newCloud.xI = self.c[j].xI
-						newCloud.xF = self.c[i].xF
 					
+					
+				
 					newCloud.rnn.wIN = wIN
 					newCloud.rnn.wHS = wHS
 					newCloud.rnn.wOUT = wOUT
@@ -325,9 +328,6 @@ class AutoCloud:
 		if self.k == 1: self.xI = X
 		self.listIntersection = np.zeros((np.size(self.c)),dtype=int)
 
-		mean = ((self.k-1)/self.k)*self.mean + (1/self.k)*X
-		self.mean = mean
-
 		if self.k==1:
 			self.CreateCloud(X)
 			self.c[0].t.append(self.k)
@@ -339,13 +339,6 @@ class AutoCloud:
 			self.c[0].addDataClaud(X)
 			self.c[0].x.append(X)
 			self.c[0].t.append(self.k)
-			v = self.c[0].variance
-			n = self.c[0].n
-			#R = math.sqrt((((self.m**2)+1)*n*v/n)-v)
-			#R = np.sqrt()
-			#self.c[0].R = R
-			self.c[0].calc_R()
-			self.c[0].cardinality = self.c[0].cardinality+1
 			self.aux = np.append(self.aux,1)
 			self.aux2 = np.append(self.aux,self.c[0].track)
 			self.cloud_activation.append(self.c[0])
@@ -375,8 +368,6 @@ class AutoCloud:
 					cloud.x.append(X)
 					cloud.t.append(self.k)
 					cloud.xF = X
-					#cloud.R = R
-					cloud.calc_R()
 					self.aux = np.append(self.aux,cloud.ID)
 					self.aux2 = np.append(self.aux2,cloud.track)
 					self.cloud_activation.append(cloud)
@@ -400,6 +391,9 @@ class AutoCloud:
 		DxF = euclidian_dist(x1=self.mean, x2=X)
 		Dmax = max(DxI,DxF)
 		self.Dvec = np.append(self.Dvec,Dmax)
+
+		for cloud in self.c:
+			cloud.k = self.k
 
 		if self.Dmax < Dmax:
 			self.Dmax = Dmax
