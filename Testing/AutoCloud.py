@@ -202,6 +202,7 @@ class AutoCloud:
 		self.cloud_activation = []
 	
 	def mergeClouds(self,x):
+		
 		i=0
 		while(i<len(self.listIntersection)-1):
 			merge=False
@@ -250,8 +251,8 @@ class AutoCloud:
 					wOUT = ((woutI*tipicalityI)+(woutJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 					hI = ((hiI*tipicalityI)+(hiJ*tipicalityJ))/(tipicalityI+tipicalityJ)
 
-					newCloud = DataCloud(x,self.gCreated,self.nI,self.nR,self.nO,
-									[self.N1,self.N2,self.N3],self.tau,self.decay)
+					newCloud = DataCloud(x=x,ID=self.gCreated,nI=self.nI,nR=self.nR,nO=self.nO,
+									ηS=[self.N1,self.N2,self.N3],tau=self.tau,decay=self.decay)
 					newCloud.m = self.m
 
 					for id in trackI:
@@ -263,15 +264,15 @@ class AutoCloud:
 					newCloud.R = radius
 					newCloud.Rvec[0] = radius
 
-					x = self.c[i].x + self.c[j].x
+					x_ = self.c[i].x + self.c[j].x
 					t = self.c[i].t + self.c[j].t
-					mat = np.array(list(zip(t,x)), dtype=object)
+					mat = np.array(list(zip(t,x_)), dtype=object)
 					col = mat[:, 0].astype(int) 
 					_, index = np.unique(col, return_index=True)
 					result = mat[np.sort(index)]
 					t = result[:, 0].tolist()
-					x = result[:, 1].tolist()
-					newCloud.x = x
+					x_ = result[:, 1].tolist()
+					newCloud.x = x_
 					newCloud.t = t
 					dist = 0
 					if euclidian_dist(self.c[i].xI,self.c[i].xF) > dist:
@@ -290,6 +291,7 @@ class AutoCloud:
 						dist = euclidian_dist(self.c[j].xI,self.c[i].xF)
 						newCloud.xI = self.c[j].xI
 						newCloud.xF = self.c[i].xF
+					
 					newCloud.rnn.wIN = wIN
 					newCloud.rnn.wHS = wHS
 					newCloud.rnn.wOUT = wOUT
@@ -355,8 +357,9 @@ class AutoCloud:
 			for cloud in self.c:
 				n= cloud.n +1
 				mean = ((n-1)/n)*cloud.mean + (1/n)*X
-				meant = ((n-1)/n) * cloud.meant + (X.dot(X))/n
+				meant = ((n-1)/n) * cloud.meant + (X.dot(X)/n)
 				variance=meant-mean.dot(mean)
+				#print(meant,mean.dot(mean), variance)
 				eccentricity = (1/n)+((mean-X).T.dot(mean-X))/(n*variance)
 				typicality = 1 - (eccentricity-(1e-12))
 				norm_eccentricity = eccentricity/2

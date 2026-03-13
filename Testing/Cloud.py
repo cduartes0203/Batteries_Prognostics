@@ -20,7 +20,8 @@ class DataCloud:
 		#self.meant=np.array(x).dot(np.array(x))
 		#print(x,type(x))
 		#self.meant=x.dot(x)
-		self.meant=np.array([0])
+		#print(x.dot(x))
+		self.meant=x.dot(x)
 		self.variance=0
 		self.pertinency=1
 		self.tipicality=1e-12
@@ -55,7 +56,7 @@ class DataCloud:
 	def addDataClaud(self,x):
 		self.n=2
 		self.mean=(self.mean+x)/2
-		self.meant=((self.meant)/2) + (x.dot(x))/2
+		self.meant=((self.meant) + x.dot(x))/2
 		self.variance=self.meant-self.mean.dot(self.mean)
 
 	def updateDataCloud(self,n,mean,meant,variance,tipicality):
