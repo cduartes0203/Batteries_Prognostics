@@ -352,14 +352,11 @@ class AutoCloud:
 				mean = ((n-1)/n)*cloud.mean + (1/n)*X
 				meant = ((n-1)/n) * cloud.meant + (X.dot(X)/n)
 				variance=meant-mean.dot(mean)
-				#print(meant,mean.dot(mean), variance)
 				eccentricity = (1/n)+((mean-X).T.dot(mean-X))/(n*variance)
 				typicality = 1 - (eccentricity-(1e-12))
 				norm_eccentricity = eccentricity/2
 				norm_typicality = typicality/(self.k-2)
 				cloud.eccAn = eccentricity
-				#R = np.sqrt((((self.m**2)+1)*n*variance/n)-variance)
-				#R = np.sqrt(np.abs(variance/cloud.n) *((self.m**2)*(cloud.n+1)+1))
 				if(norm_eccentricity<=(self.m**2 +1)/(2*n)):
 					createCloud= False
 					cloud.updateDataCloud(n,mean,meant,variance,typicality)
@@ -381,23 +378,13 @@ class AutoCloud:
 				self.listIntersection = np.insert(self.listIntersection,i,1)
 				self.matrixIntersection = np.pad(self.matrixIntersection, ((0,1),(0,1)), 'constant', constant_values=(0)) 
 				self.c[-1].t.append(self.k)
-				self.c[-1].R = 0
 				self.aux = np.append(self.aux,self.c[-1].ID)
 				self.aux2 = np.append(self.aux2,self.c[-1].track)
 				self.cloud_activation.append(self.c[-1])
 			self.mergeClouds(X)
 
-		DxI = euclidian_dist(x1=self.mean, x2=self.xI)
-		DxF = euclidian_dist(x1=self.mean, x2=X)
-		Dmax = max(DxI,DxF)
-		self.Dvec = np.append(self.Dvec,Dmax)
-
 		for cloud in self.c:
 			cloud.k = self.k
-
-		if self.Dmax < Dmax:
-			self.Dmax = Dmax
-			self.xF = X
 
 		self.cycleP = np.append(self.cycleP,self.st+self.k-1)
 		self.rulR = np.flip(self.cycleP-(self.st-1))
