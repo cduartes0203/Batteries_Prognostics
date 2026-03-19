@@ -97,11 +97,12 @@ def time_features(vec):
     ntrpy = signal_entropy(vec)
     rms = (np.sqrt(np.mean(np.square(np.array(vec)))))
     max = np.max(vec)
+    min = np.min(vec)
     ptp = (np.ptp(vec))
 
-    features = [mn,mn_abs,var,std,skw,krt,ntrpy,rms,max,ptp]
+    features = [mn,mn_abs,var,std,skw,krt,ntrpy,rms,max,min,ptp]
     column_names =['Média','Média Absoluta','Variância','Desvio Parão',
-                   'Assimetria','Kurtose','Entropia','RMS','Máximo','Pico-a-pico']
+                   'Assimetria','Kurtose','Entropia','RMS','Máximo','Mínimo','Pico-a-pico']
     return features, column_names
 def freq_features(vec,rate=fs):
     vec = vec - np.mean(vec)
@@ -442,14 +443,15 @@ def time_features(vec):
     ntrpy = signal_entropy(vec)
     rms = (np.sqrt(np.mean(np.square(np.array(vec)))))
     max = np.max(vec)
+    min = np.min(vec)
     ptp = (np.ptp(vec))
     crest = np.max(vec) / rms
     zcr = np.count_nonzero(np.diff(np.sign(vec)))
     ff = rms / np.mean(np.abs(vec))
 
-    features = [mn,mn_abs,var,std,skw,krt,ntrpy,rms,max,ptp,crest,zcr,ff]
+    features = [mn,mn_abs,var,std,skw,krt,ntrpy,rms,max,min,ptp,crest,zcr,ff]
     column_names = ['Média', 'Média Absoluta', 'Variância', 'Desvio Padrão', 
-                    'Assimetria', 'Kurtose', 'Entropia', 'RMS', 'Máximo', 'Pico-a-pico',
+                    'Assimetria', 'Kurtose', 'Entropia', 'RMS', 'Máximo','Mínimo', 'Pico-a-pico',
                     'Fator de Cresta', 'Taxa de cruzamento por zero', 'Fator de Forma']
     return features, column_names
 def freq_features(vec,rate=fs):

@@ -96,6 +96,42 @@ def plot_single_df(df,j=0):
   fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
   fig.show()
 
+def PlotSeries3D(xSeries,zSeries,width=600,height=600,title = 'r',xlabel = 'Frequency (Hz)',ylabel = 'Sample',zlabel = 'Amplitude'):
+  x = [[g  for g in range(len(x))] for x in xSeries]
+  y = []
+  for i in range(len(xSeries)):
+      y.append([i for j in range(len(xSeries[i]))])
+  z = [z for z in zSeries]
+  traces = []
+
+  for i in range(len(x)):
+      trace = go.Scatter3d(
+          x=x[i],
+          y=y[i],
+          z=z[i],
+          mode='lines',
+          name=f'{i}',
+          line=dict(color=z[i], colorscale='Viridis', width=2),
+      )
+      traces.append(trace)
+
+  layout = go.Layout(
+      title=title,
+      scene=dict(
+          xaxis=dict(title=xlabel),
+          yaxis=dict(title=ylabel),
+          zaxis=dict(title=zlabel),
+          camera=dict(
+              eye=dict(x=-1.25, y=-1.25, z=0.75)
+          )
+      ),
+      width=width, height = height
+  )
+
+  fig = go.Figure(data=traces, layout=layout)
+  fig.show()
+  return traces
+
 def plot_3d(df,width=600,height=600,title = 'r',xlabel = 'Frequency (Hz)',ylabel = 'Sample',zlabel = 'Amplitude'):
   x = [[g  for g in range(len(df))] for i in range(len(df.columns))]
   y = []
