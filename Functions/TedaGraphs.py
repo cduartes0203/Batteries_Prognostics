@@ -1550,7 +1550,7 @@ def plot_DSI2(teda, w=15, h=4,ftrs=None, out=None, title=None,
 
         yticks = np.round(np.linspace(0, 1, 6), 2).tolist()[1:] + [0]
         ax.set_yticks(sorted(yticks))
-        ax.set_ylim(L-0.05*U, U+0.05*U)
+        #ax.set_ylim(L-0.05*U, U+0.05*U)
         ax.set_ylabel(f"DSI-{j+1} Value", fontsize=flbl)
         ax.set_xlabel(f"Cycle", fontsize=flbl)
         
