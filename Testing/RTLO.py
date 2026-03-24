@@ -41,7 +41,10 @@ class RTLO:
         self.wOUT = self.xavier_uniform([nOUT, nHS])
         self.b = np.random.randn(nHS, nOUT)/nOUT**0.5
 
-    def fit(self, x, y, tip=1):
+        self.yP = np.array([])
+        self.yR = np.array([])
+
+    def fit(self, x, y, tip=1, store=False):
         self.ηS = self.ηS/(1 + self.decay*self.k)
         η1,η2,η3 = self.ηS
         self.u = np.dot(self.nHS,self.hI) + np.dot(self.wIN,x)
@@ -67,11 +70,18 @@ class RTLO:
         self.ht2 = self.hF
         self.xI = x
 
-    def PredSingle(self,x):
+        if store:
+            self.yR = np.append(self.yR,y[-1])
+
+    def PredSingle(self,x,store=False):
         u = np.dot(self.wHS, self.ht) + np.dot(self.wIN, x)
         h = self.ht + (-self.ht + f(u))/self.τ
         y = np.dot(self.wOUT, h)
         self.ht = h
+
+        if store:
+            self.yP = np.append(self.yP,y[-1])
+
         return y
     
     def PredSingle2(self,x):

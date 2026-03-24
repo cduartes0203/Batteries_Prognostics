@@ -8,14 +8,31 @@ import pandas as pd
 from Functions.Utils import *
 
 def plot_single(y,x=None,w=400,h=400,title='r'):
-  if x is None: x = [i for i in range(len(y))]
-  fig=make_subplots(rows=1,cols=1)
-  trace = go.Scatter(x=x, y= y)
-  fig.add_trace(trace, row=1, col=1)
-  
-  fig.update_layout(width = w, height = h, title = title)
-  fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
-  fig.show()
+    if x is None: x = [i for i in range(len(y))]
+    fig=make_subplots(rows=1,cols=1)
+    trace = go.Scatter(x=x, y= y)
+    fig.add_trace(trace, row=1, col=1)
+
+    fig.update_layout(width = w, height = h, title = title)
+    fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
+    fig.show()
+
+def PlotTwoScales(x,y1,y2):
+    fig, ax1 = plt.subplots()
+
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y1', color='blue')
+    ax1.plot(x, y1, color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+
+    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+    ax2.set_ylabel('y2', color='red')  # we already handled the x-label with ax1
+    ax2.plot(x, y2, color='red')
+    ax2.tick_params(axis='y', labelcolor='red')
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
 
 def plot_series(series, names=None, title='Séries Temporais',
                   markers=None, w=600, h=400, xrg=None, yrg=None,show=True):

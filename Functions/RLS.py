@@ -47,8 +47,9 @@ class RLS_LogarithmicRegressor:
         :param lambda_: Fator de esquecimento
         :param delta: Valor inicial para P (confiança inicial baixa)
         """
+        self.delta = delta
         self.theta = np.zeros((3, 1))              # [beta_0, beta_1]
-        self.P = delta * np.eye(3)
+        self.P = self.delta * np.eye(3)
         self.lambda_ = lambda_
 
     def _phi(self, x):
