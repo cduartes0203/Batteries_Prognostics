@@ -34,13 +34,15 @@ def PlotTwoScales(x,y1,y2):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
 
-def plot_series(series, names=None, title='Séries Temporais',
+def plot_series(ySeries,xSeries=None, names=None, title='Séries Temporais',
                   markers=None, w=600, h=400, xrg=None, yrg=None,show=True):
     if xrg==None: xrg = [None, None]
     if yrg==None: yrg = [None, None]
     
-    x=series[0]
-    y=series[1]
+    if xSeries==None: 
+        xSeries = [[i for i in range(len(ySeries[j]))] for j in range(len(ySeries))]
+    x=xSeries
+    y=ySeries
     line_modes = ['lines', 'markers']
     fig = make_subplots(rows=1, cols=1)
     
@@ -58,7 +60,7 @@ def plot_series(series, names=None, title='Séries Temporais',
     fig.update_xaxes(title_text='Tempo / Frequência', row=1, col=1,range=xrg)
     if show:
         fig.show()
-    return fig
+    return 
 
 def PlotSeriesBySide(series_, w=900, h=400, title="Side-by-side", titles=None):
     n = len(series_)
