@@ -17,18 +17,20 @@ def plot_single(y,x=None,w=400,h=400,title='r'):
     fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
     fig.show()
 
-def PlotTwoScales(x,y1,y2):
-    fig, ax1 = plt.subplots()
+def PlotTwoScales(x1,x2,y1,y2,w=5,h=3,y1_name=None,y2_name=None):
+    if y1_name is None: y1_name = 'y1'
+    if y2_name is None: y2_name = 'y2'
+    fig, ax1 = plt.subplots(figsize=(w, h))
 
     ax1.set_xlabel('x')
-    ax1.set_ylabel('y1', color='blue')
-    ax1.plot(x, y1, color='blue')
+    ax1.set_ylabel(y1_name, color='blue')
+    ax1.plot(x1, y1, color='blue')
     ax1.tick_params(axis='y', labelcolor='blue')
 
     ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
-    ax2.set_ylabel('y2', color='red')  # we already handled the x-label with ax1
-    ax2.plot(x, y2, color='red')
+    ax2.set_ylabel(y2_name, color='red')  # we already handled the x-label with ax1
+    ax2.plot(x2, y2, color='red')
     ax2.tick_params(axis='y', labelcolor='red')
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -77,7 +79,7 @@ def PlotSeriesBySide(series_, w=900, h=400, title="Side-by-side", titles=None):
     fig.update_layout(width=w, height=h, title=title)
     fig.show()
 
-def plot_2series(y1,y2,x1=None,x2=None,s1 ='series1',s2 ='series2',title='r', mrkr1 = 0, mrkr2 = 0, w=400,h=400,):
+def plot_2series(x1=None,x2=None,y1=None,y2=None,s1 ='series1',s2 ='series2',title='r', mrkr1 = 0, mrkr2 = 0, w=400,h=400,):
   if x1 is None: x1 = np.arange(len(y1))
   if x2 is None: x2 = np.arange(len(y2))
   line_modes = ['lines','markers'] 
