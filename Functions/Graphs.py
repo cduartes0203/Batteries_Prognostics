@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from Functions.Utils import *
 
-def plot_single(y,x=None,w=400,h=400,title='r'):
+def PlotPLY(x=None,y=None,w=400,h=400,title='r'):
     if x is None: x = [i for i in range(len(y))]
     fig=make_subplots(rows=1,cols=1)
     trace = go.Scatter(x=x, y= y)
@@ -16,6 +16,81 @@ def plot_single(y,x=None,w=400,h=400,title='r'):
     fig.update_layout(width = w, height = h, title = title)
     fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
     fig.show()
+
+def PlotMPL(x=None, y=None, w=5, h=5, title='r'):
+    if x is None: x = [i for i in range(len(y))]
+    plt.figure(figsize=(w, h))  # Define o tamanho do gráfico
+    plt.plot(x, y, linestyle='-', color='b', label="Sinal")  # Plota os dados
+    plt.xlabel("Tempo")  # Nome do eixo X
+    plt.ylabel("Amplitude")  # Nome do eixo Y
+    plt.title(title)  # Define o título do gráfico
+    plt.grid(True)  # Adiciona grade ao gráfico
+    plt.legend()  # Exibe legenda
+    plt.show()  # Mostra o gráfico
+
+def PlotSingle(x,y,mode='plt',w=5,h=3,title='r'):
+    if mode=='plt':
+        PlotMPL(x,y,w,h,title)
+    elif mode=='ply':
+        w=w*100
+        h=h*100
+        PlotPLY(x,y,w,h,title)
+
+def PlotSeriesPLY(xSeries=None,ySeries=None, names=None, title='Séries Temporais',
+                  markers=None, w=600, h=400):
+    
+    if xSeries==None: 
+        xSeries = [[i for i in range(len(ySeries[j]))] for j in range(len(ySeries))]
+    x=xSeries
+    y=ySeries
+    line_modes = ['lines', 'markers']
+    fig = make_subplots(rows=1, cols=1)
+    
+    if names is None:
+        names = [f'Série {i+1}' for i in range(len(y))]
+    if markers is None:
+        markers = [0] * len(y) # Padrão para todos como 'lines'
+
+    for x, y, name, m_idx in zip(x, y, names, markers):
+        mode = line_modes[m_idx] if m_idx < len(line_modes) else 'lines'
+        fig.add_trace(go.Scatter(x=x, y=y, name=name, mode=mode),row=1, col=1)
+
+    fig.update_layout(width=w, height=h, title=title,template='plotly_white')
+    fig.update_yaxes(title_text='Amplitude', row=1, col=1,)
+    fig.update_xaxes(title_text='Tempo / Frequência', row=1, col=1,)
+    fig.show()
+
+def PlotSeriesPLT(xSeries=None,ySeries=None, names=None, title='Séries Temporais',
+                            w=6, h=4):
+    
+    if xSeries is None:
+        xSeries = [np.arange(len(y)) for y in ySeries]
+    
+    fig, ax = plt.subplots(figsize=(w, h))
+    
+    if names is None:
+        names = [f'Série {i+1}' for i in range(len(ySeries))]
+        
+
+    for x, y, name in zip(xSeries, ySeries, names):
+    
+        ax.plot(x, y, label=name, linestyle='-', linewidth=1.5)
+
+    ax.set_title(title)
+    ax.set_xlabel('Tempo / Frequência')
+    ax.set_ylabel('Amplitude')
+    ax.grid(True, linestyle='--', alpha=0.6)
+    ax.legend(frameon=True, fontsize='small')
+    plt.tight_layout()
+    plt.show()
+
+def PlotSeries(xSeries=None,ySeries=None,mode='plt',w=5,h=3,title='r'):
+    if mode=='plt':
+        PlotSeriesPLT(xSeries=xSeries,ySeries=ySeries,w=w,h=h,title=title)
+    elif mode=='ply':
+
+        PlotSeriesPLY(xSeries=xSeries,ySeries=ySeries,w=w*100,h=h*100,title=title)
+     
 
 def PlotTwoScales(x1,x2,y1,y2,w=5,h=3,y1_name=None,y2_name=None):
     if y1_name is None: y1_name = 'y1'
@@ -36,33 +111,32 @@ def PlotTwoScales(x1,x2,y1,y2,w=5,h=3,y1_name=None,y2_name=None):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
 
-def plot_series(ySeries,xSeries=None, names=None, title='Séries Temporais',
-                  markers=None, w=600, h=400, xrg=None, yrg=None,show=True):
-    if xrg==None: xrg = [None, None]
-    if yrg==None: yrg = [None, None]
-    
-    if xSeries==None: 
-        xSeries = [[i for i in range(len(ySeries[j]))] for j in range(len(ySeries))]
-    x=xSeries
-    y=ySeries
-    line_modes = ['lines', 'markers']
-    fig = make_subplots(rows=1, cols=1)
-    
-    if names is None:
-        names = [f'Série {i+1}' for i in range(len(y))]
-    if markers is None:
-        markers = [0] * len(y) # Padrão para todos como 'lines'
+def PlotFourScales(x1, x2, y1, y2, w=7, h=4, x1_name='x1', y1_name='y1', x2_name='x2', y2_name='y2'):
+    fig, ax1 = plt.subplots(figsize=(w, h))
 
-    for x, y, name, m_idx in zip(x, y, names, markers):
-        mode = line_modes[m_idx] if m_idx < len(line_modes) else 'lines'
-        fig.add_trace(go.Scatter(x=x, y=y, name=name, mode=mode),row=1, col=1)
+    # --- Série 1 (Eixos Inferior e Esquerdo) ---
+    line1, = ax1.plot(x1, y1, color='blue', label=y1_name)
+    ax1.set_xlabel(x1_name, color='blue')
+    ax1.set_ylabel(y1_name, color='blue')
+    ax1.tick_params(axis='both', labelcolor='blue')
 
-    fig.update_layout(width=w, height=h, title=title,template='plotly_white')
-    fig.update_yaxes(title_text='Amplitude', row=1, col=1,range=yrg)
-    fig.update_xaxes(title_text='Tempo / Frequência', row=1, col=1,range=xrg)
-    if show:
-        fig.show()
-    return 
+    # --- Série 2 (Eixos Superior e Direito) ---
+    # twinx() cria o eixo Y independente, twiny() cria o eixo X independente
+    ax2 = ax1.twinx().twiny() 
+
+    line2, = ax2.plot(x2, y2, color='red', label=y2_name, linestyle='--')
+    ax2.set_xlabel(x2_name, color='red')
+    ax2.set_ylabel(y2_name, color='red')
+    ax2.tick_params(axis='both', labelcolor='red')
+
+    # Ajuste fino: move o label do eixo X2 para o topo para não sobrepor
+    ax2.xaxis.set_label_position('top') 
+    ax2.xaxis.tick_top()
+
+    fig.tight_layout()
+    plt.show()
+
+
 
 def PlotSeriesBySide(series_, w=900, h=400, title="Side-by-side", titles=None):
     n = len(series_)
@@ -90,16 +164,6 @@ def plot_2series(x1=None,x2=None,y1=None,y2=None,s1 ='series1',s2 ='series2',tit
   fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
   fig.show()
 
-def plot_single2(x, y, w=5, h=5, title='r'):
-
-    plt.figure(figsize=(w, h))  # Define o tamanho do gráfico
-    plt.plot(x, y, linestyle='-', marker='o', color='b', label="Sinal")  # Plota os dados
-    plt.xlabel("Tempo")  # Nome do eixo X
-    plt.ylabel("Amplitude")  # Nome do eixo Y
-    plt.title(title)  # Define o título do gráfico
-    plt.grid(True)  # Adiciona grade ao gráfico
-    plt.legend()  # Exibe legenda
-    plt.show()  # Mostra o gráfico
 
 def plot_double(x1,y1,x2,y2,label1 = 'label1',label2 = 'label2', title='title'):
   fig=make_subplots(rows=1,cols=2)

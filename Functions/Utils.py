@@ -21,6 +21,10 @@ from sklearn.preprocessing import StandardScaler
 
 fs=32000
 
+def NormalizeSeries(x,lB=0,uB=1):
+    xNorm = ((uB-lB)*((x-np.min(x))/(np.max(x)-np.min(x))))+lB
+    return xNorm
+
 def signal_entropy(signal, bins=50):
     """Calcula a entropia de um sinal transformando-o em distribuição de probabilidades."""
     
@@ -364,8 +368,10 @@ def sqr_df(df):
             aux[aux.columns[i]] = aux[aux.columns[i]] * aux[aux.columns[i]]
     return aux
 
-def normalize_df(df):
-    return (df - df.min()) / (df.max() - df.min())
+def normalize_df(df, lB=0, uB=1):
+    for col in df.columns:
+        df[col] = NormalizeSeries(df[col], lB, uB)
+    return df
 
 # filters ###############################################################################################################################
 
