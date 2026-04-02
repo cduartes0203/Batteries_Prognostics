@@ -68,7 +68,8 @@ class RLS_LogarithmicRegressor:
 
     def predict(self, x):
         phi_x = self._phi(x)
-        return float(phi_x.T @ self.theta)
+        #return float(phi_x.T @ self.theta)
+        return ((phi_x.T @ self.theta)).item()
 
     def get_params(self):
         return self.theta.flatten()
