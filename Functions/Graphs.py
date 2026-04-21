@@ -111,6 +111,53 @@ def PlotTwoScales(x1,x2,y1,y2,w=5,h=3,y1_name=None,y2_name=None):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
 
+def PlotTwoScalesPLY(x1, x2, y1, y2, w=500, h=300, y1_name='y1', y2_name='y2',x_name='Cycle'):
+    # Criar subplots com um eixo Y secundário
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Adicionar a primeira série (Eixo Principal - Esquerda)
+    fig.add_trace(
+        go.Scatter(x=x1, y=y1, name=y1_name, line=dict(color='blue')),
+        secondary_y=False,
+    )
+
+    # Adicionar a segunda série (Eixo Secundário - Direita)
+    fig.add_trace(
+        go.Scatter(x=x2, y=y2, name=y2_name, line=dict(color='red')),
+        secondary_y=True,
+    )
+
+    # Configurar títulos e cores dos eixos
+    fig.update_layout(
+        width=w, height=h,
+        xaxis_title=x_name,
+        template="plotly_white", # Fundo limpo como o tight_layout
+        legend=dict(orientation="v"
+                    #, yanchor="bottom"
+                    , y=1.0
+                    #, xanchor="right"
+                    , x=1.2
+                    )
+    )
+
+    # Estilizar o eixo Y principal (Azul)
+    fig.update_yaxes(
+        title_text=f"<b>{y1_name}</b>", 
+        title_font=dict(color="blue"), 
+        tickfont=dict(color="blue"), 
+        secondary_y=False
+    )
+
+    # Estilizar o eixo Y secundário (Vermelho)
+    fig.update_yaxes(
+        title_text=f"<b>{y2_name}</b>", 
+        title_font=dict(color="red"), 
+        tickfont=dict(color="red"), 
+        secondary_y=True
+    )
+
+    fig.show()
+
 def PlotFourScales(x1, x2, y1, y2, w=7, h=4, x1_name='x1', y1_name='y1', x2_name='x2', y2_name='y2'):
     fig, ax1 = plt.subplots(figsize=(w, h))
 
@@ -135,8 +182,6 @@ def PlotFourScales(x1, x2, y1, y2, w=7, h=4, x1_name='x1', y1_name='y1', x2_name
 
     fig.tight_layout()
     plt.show()
-
-
 
 def PlotSeriesBySide(series_, w=900, h=400, title="Side-by-side", titles=None):
     n = len(series_)
