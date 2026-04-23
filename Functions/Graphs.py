@@ -92,9 +92,11 @@ def PlotSeries(xSeries=None,ySeries=None,mode='plt',w=5,h=3,title='r'):
         PlotSeriesPLY(xSeries=xSeries,ySeries=ySeries,w=w*100,h=h*100,title=title)
      
 
-def PlotTwoScales(x1,x2,y1,y2,w=5,h=3,y1_name=None,y2_name=None):
+def PlotTwoScales(y1,y2,x1=None,x2=None,w=5,h=3,y1_name=None,y2_name=None):
     if y1_name is None: y1_name = 'y1'
     if y2_name is None: y2_name = 'y2'
+    if x1 is None: x1 = np.arange(len(y1))
+    if x2 is None: x2 = np.arange(len(y2))
     fig, ax1 = plt.subplots(figsize=(w, h))
 
     ax1.set_xlabel('x')
@@ -183,20 +185,86 @@ def PlotFourScales(x1, x2, y1, y2, w=7, h=4, x1_name='x1', y1_name='y1', x2_name
     fig.tight_layout()
     plt.show()
 
-def PlotSeriesBySide(series_, w=900, h=400, title="Side-by-side", titles=None):
-    n = len(series_)
-    titles = titles if titles is not None else [f"Plot {i+1}" for i in range(n)]
-    fig = make_subplots(rows=1, cols=n, subplot_titles=titles)
+def PlotPredError(rtlo,w=9,h=3):
+    s = len(rtlo.yWAPE)
+    t = rtlo.t
+    fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(w, h))
+    axes = axes.flatten()
+    ax1,ax2,ax3,ax4 = axes[0], axes[1], axes[2], axes[3]
 
-    for i, series in enumerate(series_, start=1):
-        #print(len(series))
-        f = plot_series(series, show=False)     # gera “mini-fig”
-        for tr in f.data:
-            fig.add_trace(tr, row=1, col=i) # reaproveita o trace
-        fig.update_yaxes(title_text="Amplitude", row=1, col=i)
+    ax1.plot(t, rtlo.yR, color='black',label='Y-Real', linestyle='-')
+    ax1.plot(t, rtlo.yP, color='blue',label='Y-Pred', linestyle='-')
+    ax1.plot(t, rtlo.yL, color='blue', linestyle='--')
+    ax1.plot(t, rtlo.yU, color='blue', linestyle='--')
+    
+    ax1.set_title('Y - Real x Prediction')
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y', color='black')
+    ax1.legend()
 
-    fig.update_layout(width=w, height=h, title=title)
+    ax2.plot(t, rtlo.eR, color='black',label='e-Real', linestyle='-')
+    ax2.plot(t, rtlo.eP, color='blue',label='e-Pred', linestyle='-')
+    ax2.set_title('Error - Real x Prediction')
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Prediction Error', color='black') 
+    ax2.legend()
+    
+    ax3.plot(t[-s:], rtlo.yWAPE, color='blue',label='WAPE', linestyle='-')
+    ax3.set_title('Prediction WAPE')
+    ax3.set_xlabel('X')
+    ax3.set_ylabel('WAPE', color='black') 
+
+    '''ax4.plot(t[-s:], rtlo.rWAPE, color='blue',label='WAPE', linestyle='-')
+    ax4.set_title('RUL Prediction WAPE')
+    ax4.set_xlabel('X')
+    ax4.set_ylabel('WAPE', color='black') '''
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+def PlotPredErrorPLY(rtlo, w=800, h=300):
+    # s: tamanho do vetor WAPE (caso comece depois do início)
+    t = rtlo.t
+    
+    # Criando o layout de 1 linha e 4 colunas
+    fig = make_subplots(
+        rows=1, cols=3, 
+        shared_xaxes=True,
+        subplot_titles=('Y - Real x Prediction', 'RUL - Real x Pred', 'RUL Prediction WAPE', 'Prediction WAPE', 'RUL Prediction WAPE')
+    )
+
+    # --- Subplot 1: Y Real x Pred (com Intervalos) ---
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yR, name='Y-Real', line=dict(color='black')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yP, name='Y-Pred', line=dict(color='blue')), row=1, col=1)
+    # Intervalos (Dashed)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yL, name='y-Lower', line=dict(color='blue', dash='dash'), showlegend=False), row=1, col=1)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yU, name='y-Upper', line=dict(color='blue', dash='dash'), showlegend=False), row=1, col=1)
+
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulR, name='rul R', line=dict(color='black'), showlegend=True), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulP, name='rul P', line=dict(color='blue'), showlegend=True), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulL, name='rul L', line=dict(color='red'), showlegend=True), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulU, name='rul U', line=dict(color='green'), showlegend=True), row=1, col=2)
+
+    fig.add_trace(go.Scatter(x=t[-len(rtlo.εR_hist):], y=rtlo.εR_hist, name='wMAPE', line=dict(color='black'), showlegend=True), row=1, col=3)
+    #fig.add_trace(go.Scatter(x=t, y=rtlo.eR, name='erro R', line=dict(color='black')), row=1, col=3)
+    #fig.add_trace(go.Scatter(x=t, y=rtlo.eP, name='erro P', line=dict(color='blue')), row=1, col=3)
+
+    # Atualizando Layout e Eixos
+    fig.update_layout(
+        width=w, height=h,
+        title_text=f"RTLO Model Performance Analysis",
+        template='plotly_white',
+        showlegend=True,
+        margin=dict(l=40, r=40, t=80, b=40)
+    )
+
+    # Labels dos eixos (opcional, já que os títulos ajudam)
+    fig.update_xaxes(title_text="Time / Index")
+    fig.update_yaxes(title_text="Amplitude", col=1)
+    fig.update_yaxes(title_text="Error", col=2)
+
     fig.show()
+
 
 def plot_2series(x1=None,x2=None,y1=None,y2=None,s1 ='series1',s2 ='series2',title='r', mrkr1 = 0, mrkr2 = 0, w=400,h=400,):
   if x1 is None: x1 = np.arange(len(y1))
@@ -332,28 +400,6 @@ def plot_3d_inline(fft_r,env_r,title1 = 'df1',title2 = 'df2'):
 
     fig.update_layout( height=600, width=1200, title_text="Comparison of FFT_R and ENV_R in 3D")
     fig.show()
-
-
-def plot_custom(df_r,df_d):
-    num_cols = len(df_r.columns[1:])
-
-    fig, axes = plt.subplots(nrows=(num_cols + 2) // 3, ncols=3, figsize=(18, (num_cols + 2) // 3 * 3))
-
-    axes = axes.flatten()
-
-    for i in range(1, len(df_r.columns)):
-        axes[i - 1].plot(df_r.iloc[:int(0.5*len(df_r)), i], label='df_r')
-        axes[i - 1].plot(df_d.iloc[:int(0.5*len(df_r)), i], label='df_d')
-        axes[i - 1].set_title(f'{df_r.columns[i]}')
-        axes[i - 1].legend()
-
-    if num_cols % 3 != 0:
-        for j in range(3 - num_cols % 3):
-            axes[-(j+1)].axis('off')
-
-    plt.tight_layout()
-    plt.show()
-
 
 
 def plot_3d_fft(df,width=600,height=600,title = 'r',xlabel = 'Frequency (Hz)',ylabel = 'Sample',zlabel = 'Amplitude'):
