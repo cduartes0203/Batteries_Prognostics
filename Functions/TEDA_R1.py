@@ -471,7 +471,8 @@ class AutoCloud:
 					if FitOffGrnls and OfflineRun:
 						cloud.updateDataCloud(n,mean,meant,variance,typicality)
 						self.alfa[i] = norm_typicality
-						self.listIntersection.itemset(i,1)
+						#self.listIntersection.itemset(i,1)
+						self.listIntersection[i] = 1
 						#aux = np.append(aux,cloud.ID)
 						cloud.x.append(X)
 						cloud.t.append(self.k)
@@ -484,7 +485,8 @@ class AutoCloud:
 						if not cloud in self.OffineGrnls:
 							cloud.updateDataCloud(n,mean,meant,variance,typicality)
 							self.alfa[i] = norm_typicality
-							self.listIntersection.itemset(i,1)
+							#self.listIntersection.itemset(i,1)
+							self.listIntersection[i] = 1
 							#aux = np.append(aux,cloud.ID)
 							#cloud.x.append(X)
 							#cloud.t.append(self.k)
@@ -494,7 +496,8 @@ class AutoCloud:
 					self.aux2 = np.append(self.aux2,cloud.track)
 				else:
 					self.alfa[i] = 0
-					self.listIntersection.itemset(i,0)
+					#self.listIntersection.itemset(i,0)
+					self.listIntersection[i] = 1
 				i+=1
 
 			if(createCloud):
