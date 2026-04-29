@@ -113,8 +113,12 @@ def PlotTwoScales(y1,y2,x1=None,x2=None,w=5,h=3,y1_name=None,y2_name=None):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
 
-def PlotTwoScalesPLY(x1, x2, y1, y2, w=500, h=300, y1_name='y1', y2_name='y2',x_name='Cycle'):
+def PlotTwoScalesPLY(y1, y2,x1=None, x2=None, w=500, h=300, y1_name='y1', y2_name='y2',x_name='Cycle'):
     # Criar subplots com um eixo Y secundário
+    if x1==None:
+        x1 = np.arange(len(y1))
+    if x2==None:
+        x2 = np.arange(len(y2))
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Adicionar a primeira série (Eixo Principal - Esquerda)
