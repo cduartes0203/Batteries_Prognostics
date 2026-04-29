@@ -1,26 +1,6 @@
 
 import numpy as np
-import pandas as pd
-import scipy.io
-import pickle
 
-from scipy import signal
-from scipy.stats import entropy, kurtosis, entropy
-from scipy.signal import hilbert, chirp
-import os
-import pickle as pkl
-import re
-import scipy.stats as stats
-import math
-from scipy import signal
-from scipy.signal import savgol_filter, stft
-from scipy.ndimage import gaussian_filter1d, median_filter
-from collections import Counter
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import root_mean_squared_error as RMSE
-from sklearn.metrics import mean_absolute_percentage_error as MAPE
-from sklearn.metrics import mean_squared_error as MSE
 
 def ResizeSignal(data, m):
     """
