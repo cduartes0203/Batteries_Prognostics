@@ -249,7 +249,7 @@ def PlotPredErrorPLY(rtlo, w=800, h=300):
     fig.add_trace(go.Scatter(x=t, y=rtlo.rulL, name='rul L', line=dict(color='red'), showlegend=True), row=1, col=2)
     fig.add_trace(go.Scatter(x=t, y=rtlo.rulU, name='rul U', line=dict(color='green'), showlegend=True), row=1, col=2)
 
-    fig.add_trace(go.Scatter(x=t[-len(rtlo.εR_hist):], y=rtlo.εR_hist, name='wMAPE', line=dict(color='black'), showlegend=True), row=1, col=3)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.εR_hist, name='wMAPE', line=dict(color='black'), showlegend=True), row=1, col=3)
     #fig.add_trace(go.Scatter(x=t, y=rtlo.eR, name='erro R', line=dict(color='black')), row=1, col=3)
     #fig.add_trace(go.Scatter(x=t, y=rtlo.eP, name='erro P', line=dict(color='blue')), row=1, col=3)
 
