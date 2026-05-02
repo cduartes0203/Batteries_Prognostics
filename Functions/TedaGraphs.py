@@ -1506,11 +1506,11 @@ def plot_DSI2(teda, w=15, h=4,ftrs=None, out=None, title=None,
              dsix=0,dsiy=1,
              flgnd=7, anchor=None, m1=3, m2=4, m3=1, ncol=1):
     if ftrs is None: ftrs = 2
-    #cmap = mpl.colormaps.get_cmap('tab20').resampled(len(teda.c))
-    #colors = [cmap(i) for i in range(len(teda.c))]
+    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(teda.c))
+    colors = [cmap(i) for i in range(len(teda.c))]
 
-    cmap = mpl.colormaps.get_cmap('tab20').resampled(10)
-    colors = [cmap(i) for i in range(10)]
+    #cmap = mpl.colormaps.get_cmap('tab20').resampled(10)
+    #colors = [cmap(i) for i in range(10)]
 
     fig = plt.figure(figsize=(w, h))
     fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,

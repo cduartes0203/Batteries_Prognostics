@@ -229,30 +229,58 @@ def PlotPredError(rtlo,w=9,h=3):
 def PlotPredErrorPLY(rtlo, w=800, h=300):
     # s: tamanho do vetor WAPE (caso comece depois do início)
     t = rtlo.t
-    
+    tol = 25
     # Criando o layout de 1 linha e 4 colunas
     fig = make_subplots(
         rows=1, cols=3, 
         shared_xaxes=True,
-        subplot_titles=('Y - Real x Prediction', 'RUL - Real x Pred', 'RUL Prediction WAPE', 'Prediction WAPE', 'RUL Prediction WAPE')
+        subplot_titles=('Y - Real x Prediction', 'RUL - Real x Pred', 'Error Analysis'),
+        specs=[[{"secondary_y": False}, {"secondary_y": False}, {"secondary_y": True}]]
     )
 
     # --- Subplot 1: Y Real x Pred (com Intervalos) ---
-    fig.add_trace(go.Scatter(x=t, y=rtlo.yR, name='Y-Real', line=dict(color='black')), row=1, col=1)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.yP, name='Y-Pred', line=dict(color='blue')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yR, name='Deg-R', line=dict(color='black')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yP, name='Deg-P', line=dict(color='blue')), row=1, col=1)
     # Intervalos (Dashed)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.yL, name='y-Lower', line=dict(color='blue', dash='dash'), showlegend=False), row=1, col=1)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.yU, name='y-Upper', line=dict(color='blue', dash='dash'), showlegend=False), row=1, col=1)
+   
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yU, name='y-U', line=dict(color='blue', dash='dash')
+                             , showlegend=False), row=1, col=1)
+    
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yL, name=f"Deg-U", fill='tonexty',
+                            fillcolor='rgba(149, 100, 237, 0.25)', line=dict(width=0)
+                            , showlegend=True), row=1, col=1)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.yL, line=dict(color='blue', dash='dash')
+                             , showlegend=False), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=t, y=rtlo.rulR, name='rul R', line=dict(color='black'), showlegend=True), row=1, col=2)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.rulP, name='rul P', line=dict(color='blue'), showlegend=True), row=1, col=2)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.rulL, name='rul L', line=dict(color='red'), showlegend=True), row=1, col=2)
-    fig.add_trace(go.Scatter(x=t, y=rtlo.rulU, name='rul U', line=dict(color='green'), showlegend=True), row=1, col=2)
 
-    fig.add_trace(go.Scatter(x=t, y=rtlo.εR_hist, name='wMAPE', line=dict(color='black'), showlegend=True), row=1, col=3)
-    #fig.add_trace(go.Scatter(x=t, y=rtlo.eR, name='erro R', line=dict(color='black')), row=1, col=3)
-    #fig.add_trace(go.Scatter(x=t, y=rtlo.eP, name='erro P', line=dict(color='blue')), row=1, col=3)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulR, name='RUL-R', line=dict(color='black')
+                             , showlegend=True), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulP, name='RUL-P', line=dict(color='blue')
+                             , showlegend=True), row=1, col=2)
+    
+    fig.add_trace(go.Scatter( x=t, y=(1 + tol / 100) * rtlo.rulR,mode='lines',
+        line=dict(width=0),showlegend=False), row=1, col=2)
+    fig.add_trace(go.Scatter( x=t, y=(1 - tol / 100) * rtlo.rulR, fill='tonexty', 
+        fillcolor='rgba(128, 128, 128, 0.25)',line=dict(width=0),name=f"T-{tol}%",
+        mode='lines'), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulU, mode='lines', line=dict(color='blue', dash='dash')
+                             , showlegend=False), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulL, name=f"RUL-U", fill='tonexty',
+                            fillcolor='rgba(100, 149, 237, 0.25)', line=dict(width=0)
+                            , showlegend=True), row=1, col=2)
+    fig.add_trace(go.Scatter(x=t, y=rtlo.rulL, mode='lines', line=dict(color='blue', dash='dash')
+                             , showlegend=False), row=1, col=2)
+    fig.add_trace(
+        go.Scatter(x=t, y=rtlo.εR_hist, name='RUL wMAPE', line=dict(color='black')),
+        row=1, col=3, 
+        secondary_y=False  # Fica FORA do go.Scatter
+    )
 
+    fig.add_trace(
+        go.Scatter(x=t, y=rtlo.εM_hist, name='Deg wMAPE', line=dict(color='blue')),
+        row=1, col=3, 
+        secondary_y=True   # Fica FORA do go.Scatter
+    )
     # Atualizando Layout e Eixos
     fig.update_layout(
         width=w, height=h,
@@ -262,6 +290,22 @@ def PlotPredErrorPLY(rtlo, w=800, h=300):
         margin=dict(l=40, r=40, t=80, b=40)
     )
 
+    fig.update_yaxes(
+        title_text="<b>RUL wMAPE</b>", 
+        title_font=dict(color="black"), 
+        tickfont=dict(color="black"), 
+        secondary_y=False,
+        row=1, col=3
+    )
+
+    fig.update_yaxes(
+        title_text="<b>RUL wMAPE</b>", 
+        title_font=dict(color="blue"), 
+        tickfont=dict(color="blue"), 
+        secondary_y=True,
+        row=1, col=3
+    )
+
     # Labels dos eixos (opcional, já que os títulos ajudam)
     fig.update_xaxes(title_text="Time / Index")
     fig.update_yaxes(title_text="Amplitude", col=1)
@@ -269,26 +313,68 @@ def PlotPredErrorPLY(rtlo, w=800, h=300):
 
     fig.show()
 
+def PlotPredErrorPLT(rtlo, save=False, w=12, h=4):
+    t = rtlo.t
+    tol = 25
+    
+    # Criando a figura com 3 subplots lado a lado
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(w, h), sharex=True)
+    fig.suptitle("RTLO Model Performance Analysis", fontsize=14, fontweight='bold')
 
-def plot_2series(x1=None,x2=None,y1=None,y2=None,s1 ='series1',s2 ='series2',title='r', mrkr1 = 0, mrkr2 = 0, w=400,h=400,):
-  if x1 is None: x1 = np.arange(len(y1))
-  if x2 is None: x2 = np.arange(len(y2))
-  line_modes = ['lines','markers'] 
-  fig=make_subplots(rows=1,cols=1)
-  fig.add_trace(go.Scatter(x=x1, y=y1, name=s1, mode = line_modes[mrkr1]), row=1, col=1)
-  fig.add_trace(go.Scatter(x=x2, y=y2, name=s2,mode = line_modes[mrkr2]), row=1, col=1)
-  fig.update_layout(width = w, height = h, title = title)
-  fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
-  fig.show()
+    # --- Subplot 1: Y Real x Prediction ---
+    ax1.plot(t, rtlo.yR, color='black', label='Deg-R')
+    ax1.plot(t, rtlo.yP, color='blue', label='Deg-P')
+    # Faixa de Incerteza Deg
+    ax1.fill_between(t, rtlo.yL, rtlo.yU, color='cornflowerblue', alpha=0.25, label='Deg-U')
+    ax1.plot(t, rtlo.yL, color='blue', linestyle='--', linewidth=0.5)
+    ax1.plot(t, rtlo.yU, color='blue', linestyle='--', linewidth=0.5)
+    
+    ax1.set_title('Y - Real x Prediction')
+    ax1.set_ylabel('Amplitude')
+    ax1.legend()
+    ax1.grid(True, linestyle=':', alpha=0.6)
 
+    # --- Subplot 2: RUL - Real x Pred ---
+    ax2.plot(t, rtlo.rulR, color='black', label='RUL-R')
+    ax2.plot(t, rtlo.rulP, color='blue', label='RUL-P')
+    
+    # Faixa de Tolerância (T-25%)
+    upper_tol = (1 + tol / 100) * rtlo.rulR
+    lower_tol = (1 - tol / 100) * rtlo.rulR
+    ax2.fill_between(t, lower_tol, upper_tol, color='gray', alpha=0.25, label=f'T-{tol}%')
+    
+    # Faixa de Incerteza RUL
+    ax2.fill_between(t, rtlo.rulL, rtlo.rulU, color='cornflowerblue', alpha=0.25, label='RUL-U')
+    ax2.plot(t, rtlo.rulL, color='blue', linestyle='--', linewidth=0.5)
+    ax2.plot(t, rtlo.rulU, color='blue', linestyle='--', linewidth=0.5)
+    
+    ax2.set_title('RUL - Real x Pred')
+    ax2.set_ylabel('Error')
+    ax2.legend()
+    ax2.grid(True, linestyle=':', alpha=0.6)
 
-def plot_double(x1,y1,x2,y2,label1 = 'label1',label2 = 'label2', title='title'):
-  fig=make_subplots(rows=1,cols=2)
-  fig.add_trace(go.Scatter(x=x1, y= y1, name= label1), row=1, col=1)
-  fig.add_trace(go.Scatter(x=x2, y= y2, name= label2), row=1, col=2)
-  fig.update_layout(width = 800, height = 400, title = title)
-  fig.update_yaxes( title_text='Amplitude', row = 1, col = 1)
-  fig.show()
+    # --- Subplot 3: Error Analysis (Dois Eixos Y) ---
+    # Eixo Esquerdo: RUL wMAPE
+    ax3.plot(t, rtlo.εR_hist, color='black', label='RUL wMAPE')
+    ax3.set_ylabel('RUL wMAPE', color='black', fontweight='bold')
+    ax3.tick_params(axis='y', labelcolor='black')
+    
+    # Criando o Eixo Direito (Secundário) para Deg wMAPE
+    ax3_sec = ax3.twinx()
+    ax3_sec.plot(t, rtlo.εM_hist, color='blue', label='Deg wMAPE')
+    ax3_sec.set_ylabel('Deg wMAPE', color='blue', fontweight='bold')
+    ax3_sec.tick_params(axis='y', labelcolor='blue')
+    
+    ax3.set_title('Error Analysis')
+    ax3.set_xlabel('Time / Index')
+    ax3.grid(True, linestyle=':', alpha=0.6)
+
+    # Ajuste de layout para não sobrepor títulos
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    if save is not False:
+        fig.savefig(save, dpi=500, transparent=False)
+    plt.show()
+
 
 def plot_single_df(df,j=0):
   fig=make_subplots(rows=1,cols=1)
