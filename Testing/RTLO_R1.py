@@ -19,7 +19,7 @@ class RTLO:
         self.ρ = 0.003
 
         self.x = np.zeros(nI)
-        self.hP, self.hU, self.hL = [0.1*np.ones(nR) for i in range(3)]
+        self.hP,self.hP, self.hU, self.hL = [0.1*np.ones(nR) for i in range(4)]
         self.hP2, self.hU2, self.hL2 = [0.1*np.ones(nR) for i in range(3)]
         self.uP, self.uP2 =  [np.zeros(nR) for i in range(2)]
         self.pS = np.zeros((self.nR, self.nR))
@@ -80,10 +80,6 @@ class RTLO:
         self.wO_hist.append(self.wO.flatten())
 
         self.hP = hP
-        self.hP2 = hP
-        self.hL = hP
-        self.hU = hP
-
         self.uP = uP
         self.x = xP
 
@@ -189,53 +185,22 @@ class RTLO:
                 self.rulU = np.append(self.rulU,self.rU)
     
     def Predict(self, x):
+
         if self.flw != 'past': self.n = 0
         xP = x.copy()
-       
         
         hP = self.hP2.copy()
-        #print('P S',hP[:5])
+
         uP = (self.wR @ hP) + (self.wI @ xP)
         hP = hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
         yP = (self.wO @ hP)[self.n]
+
         self.hP2 = hP
+
         return yP
-    
-    def PredictIntr(self,xP,xL,xU,ep):
-        if self.flw != 'past': self.n = 0
-        wR,wI,wO = self.wR,self.wI,self.wO
-        hP,hU,hL = self.hP2.copy(),self.hU2.copy(),self.hL2.copy()
-        #print('P I',hP[:5])
-        wRU, wRL = np.maximum((1+ep)*wR, wR/(1+ep)), np.minimum((1+ep)*wR, wR/(1+ep))
-        wIU, wIL = np.maximum((1+ep)*wI, wI/(1+ep)), np.minimum((1+ep)*wI, wI/(1+ep))
-        wOU, wOL = np.maximum((1+ep)*wO, wO/(1+ep)), np.minimum((1+ep)*wO, wO/(1+ep))
-        
-        uP = ( wR @ hP) + ( wI @ xP)
-        uL = (wRL @ hL) + (wIL @ xL)
-        uU = (wRU @ hU) + (wIU @ xU)
-        uU, uL = np.maximum(uU,uL), np.minimum(uU,uL)
-        
-        hP = hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
-        hL = hL*(1-1/self.τ) + Activation(uL,self.act)/self.τ
-        hU = hU*(1-1/self.τ) + Activation(uU,self.act)/self.τ
-        hU, hL = np.maximum(hU,hL), np.minimum(hU,hL)
-
-        yP = ( wO @ hP)
-        yL = (wOL @ hL)
-        yU = (wOU @ hU)
-        yU, yL = np.maximum(yU, yL), np.minimum(yU, yL)
-
-        yP = yP[self.n]
-        yL = yL[self.n]
-        yU = yU[self.n]
-
-        self.hP2 = hP
-        self.hL2 = hL
-        self.hU2 = hU
-
-        return np.array([yL,yP,yU])
 
     def Restore(self):
+
         self.hP2 = self.hP
         self.hL2 = self.hP
         self.hU2 = self.hP
