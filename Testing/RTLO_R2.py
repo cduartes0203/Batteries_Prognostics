@@ -201,7 +201,7 @@ class RTLO:
         self.hP2 = hP
         return yP
     
-    def PredictIntr(self,xP,xL,xU,ep):
+    def PredictIntr(self,xP,xL,xU,ep,show=False):
         if self.flw != 'past': self.n = 0
         wR,wI,wO = self.wR,self.wI,self.wO
         hP,hU,hL = self.hP2.copy(),self.hU2.copy(),self.hL2.copy()
@@ -242,10 +242,10 @@ class RTLO:
 
     def ReturnParameters(self):
 
-        return [self.wR,self.wI,self.wO,self.pS,self.qS,self.hP,self.hP2,self.x]
+        return [self.wR,self.wI,self.wO,self.pS,self.qS,self.hP,self.hP2,self.hL2,self.hU2,self.x]
     
     def ReceiveParameters(self,vec):
-        self.wR,self.wI,self.wO,self.pS,self.qS,self.hP,self.hP2,self.x = vec
+        self.wR,self.wI,self.wO,self.pS,self.qS,self.hP,self.hP2,self.hL2,self.hU2,self.x = vec
         
 
 
