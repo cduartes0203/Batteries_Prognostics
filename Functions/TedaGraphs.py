@@ -1371,9 +1371,7 @@ def plot_DSI_3D(teda, w=15, h=4,start=None,ftrs=None, out=None, title=None,
     
     plt.show()
 
-import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+
 
 def plot_DSI_plotly(teda, start=None, ftrs=None, title=None, 
                     dsix=0, dsiy=1, dsiz=2, opacity_sphere=0.15):
