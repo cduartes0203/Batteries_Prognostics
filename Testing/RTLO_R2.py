@@ -60,7 +60,7 @@ class RTLO:
         η1,η2,η3 = self.ηS      
 
         uP = self.wR @ self.hP + self.wI @ xP
-        hP = self.hP*(1-1/self.τ) +Activation(uP,self.act)/self.τ
+        hP = self.hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
         yP = self.wO @ hP
         eS = yR-yP
 
