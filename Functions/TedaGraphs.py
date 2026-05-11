@@ -1,14 +1,8 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 from plotly.subplots import make_subplots
-from plotly.offline import plot
-import plotly.express as px
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from matplotlib.patches import ConnectionPatch
 import matplotlib.gridspec as gridspec
-import matplotlib.cm as cm
 import matplotlib as mpl
 
 def cm(x):
@@ -1654,4 +1648,3 @@ def plot_DSI_3D2(teda, w=15, h=4,ftrs=None, out=None, title=None,
         plt.savefig(out, dpi=500, transparent=False)
     
     plt.show()
-

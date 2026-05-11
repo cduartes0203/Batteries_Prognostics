@@ -1,19 +1,16 @@
 
 import numpy as np
 import pandas as pd
-import scipy.io
 import pickle
 
-from scipy import signal
-from scipy.stats import entropy, kurtosis, entropy
-from scipy.signal import hilbert, chirp
+from scipy.stats import entropy
+from scipy.signal import hilbert
 import os
-import pickle as pkl
 import re
 import scipy.stats as stats
 import math
 from scipy import signal
-from scipy.signal import savgol_filter, stft
+from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d, median_filter
 from collections import Counter
 from sklearn.decomposition import PCA

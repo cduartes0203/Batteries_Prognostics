@@ -58,14 +58,13 @@ class RTLO:
         if self.flw != 'past': self.n = 0
         
         η1,η2,η3 = self.ηS      
-
         uP = self.wR @ self.hP + self.wI @ xP
         hP = self.hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
         yP = self.wO @ hP
         eS = yR-yP
 
-        self.pS = np.outer(dActivation(uP,self.act),self.hP)/self.τ + (1-1/self.τ)*self.pS
-        self.qS = np.outer(dActivation(uP,self.act),self.x)/self.τ + (1-1/self.τ)*self.qS
+        self.pS = np.outer(dActivation(self.uP,self.act),self.hP)/self.τ + (1-1/self.τ)*self.pS
+        self.qS = np.outer(dActivation(self.uP,self.act),self.x)/self.τ + (1-1/self.τ)*self.qS
 
         δOS = η1*np.outer(eS,hP)
         δRS = η2*np.outer((self.BS@eS),np.ones(self.nR))*self.pS
@@ -83,7 +82,6 @@ class RTLO:
         self.hP2 = hP
         self.hL = hP
         self.hU = hP
-
         self.uP = uP
         self.x = xP
 
