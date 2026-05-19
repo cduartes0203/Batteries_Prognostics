@@ -373,6 +373,77 @@ def PlotPredErrorPLT(rtlo, save=False, w=12, h=4):
         fig.savefig(save, dpi=500, transparent=False)
     plt.show()
 
+def PlotSphere3D(points, centroid, R, w=600, h=600):
+    """
+    Plots a set of 3D points, a centroid, and a sphere of radius R centered at the centroid.
+    
+    Parameters:
+    - points: A list or numpy array of 3D points, shape (N, 3).
+    - centroid: A tuple or list representing the 3D centroid (x, y, z).
+    - R: A float representing the radius of the sphere.
+    """
+    points = np.array(points)
+    cx, cy, cz = centroid
+    
+    # 1. Generate parametric coordinates for the sphere
+    u = np.linspace(0, 2 * np.pi, 50)
+    v = np.linspace(0, np.pi, 50)
+    
+    x_sphere = cx + R * np.outer(np.cos(u), np.sin(v))
+    y_sphere = cy + R * np.outer(np.sin(u), np.sin(v))
+    z_sphere = cz + R * np.outer(np.ones(np.size(u)), np.cos(v))
+
+    fig = go.Figure()
+
+    # 2. Add the sphere surface
+    fig.add_trace(go.Surface(
+        x=x_sphere, 
+        y=y_sphere, 
+        z=z_sphere,
+        opacity=0.5, # Semi-transparent to see the points inside
+        colorscale='Blues',
+        showscale=False,
+        name='Sphere',
+        legendgroup='Sphere',
+        showlegend=True
+    ))
+
+    # 3. Add the centroid point
+    fig.add_trace(go.Scatter3d(
+        x=[cx], 
+        y=[cy], 
+        z=[cz],
+        mode='markers',
+        marker=dict(size=6, symbol='x', color='red'),
+        name='Centroid'
+    ))
+
+    # 4. Add the 3D points
+    if points.size > 0:
+        fig.add_trace(go.Scatter3d(
+            x=points[:, 0], 
+            y=points[:, 1], 
+            z=points[:, 2],
+            mode='markers',
+            marker=dict(size=4, color='black', opacity=0.8),
+            name='Points'
+        ))
+
+    # 5. Update layout to keep the proportions equal
+    fig.update_layout(
+        width=w, height=h,
+        title="3D Points, Centroid, and Sphere",
+        scene=dict(
+            xaxis_title="X Axis",
+            yaxis_title="Y Axis",
+            zaxis_title="Z Axis",
+            aspectmode='data' # Ensures the sphere looks perfectly round, not stretched
+        ),
+        margin=dict(l=0, r=0, b=0, t=40)
+    )
+
+    fig.show()
+
 
 def plot_single_df(df,j=0):
   fig=make_subplots(rows=1,cols=1)
