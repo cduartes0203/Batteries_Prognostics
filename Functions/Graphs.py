@@ -373,7 +373,7 @@ def PlotPredErrorPLT(rtlo, save=False, w=12, h=4):
         fig.savefig(save, dpi=500, transparent=False)
     plt.show()
 
-def PlotSphere3D(points, centroid, R, w=600, h=600):
+def PlotSphere3D(points, centroid, R, title=None, w=600, h=600):
     """
     Plots a set of 3D points, a centroid, and a sphere of radius R centered at the centroid.
     
@@ -382,6 +382,9 @@ def PlotSphere3D(points, centroid, R, w=600, h=600):
     - centroid: A tuple or list representing the 3D centroid (x, y, z).
     - R: A float representing the radius of the sphere.
     """
+    if title == None: 
+        title="3D Points, Centroid, and Sphere"
+
     points = np.array(points)
     cx, cy, cz = centroid
     
@@ -432,7 +435,7 @@ def PlotSphere3D(points, centroid, R, w=600, h=600):
     # 5. Update layout to keep the proportions equal
     fig.update_layout(
         width=w, height=h,
-        title="3D Points, Centroid, and Sphere",
+        title=title,
         scene=dict(
             xaxis_title="X Axis",
             yaxis_title="Y Axis",

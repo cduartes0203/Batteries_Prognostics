@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import plotly.express as px
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.gridspec as gridspec
 import matplotlib as mpl
@@ -1235,137 +1237,6 @@ def plot_DSI(teda, w=15, h=4,start=None,ftrs=None, out=None, title=None,
     
     plt.show()
 
-def plot_DSI_3D(teda, w=15, h=4,start=None,ftrs=None, out=None, title=None,
-             mergeID=True,lnwdth=0.75, ftcks=7, flbl=9, fttl=8.5,
-             dsix=0,dsiy=1,dsiz=2,
-             flgnd=7, anchor=None, m1=3, m2=4, m3=1, ncol=1):
-    
-    L,U = np.inf,-np.inf
-    qtd = len(teda.c)
-    DSIs = teda.DSIs[start:ftrs]
-    series = [[[] for _ in range(qtd)] for i in range(len(DSIs)+1)]
-    #cmap = mpl.colormaps.get_cmap('tab20').resampled(qtd)
-    #colors = [cmap(i) for i in range(qtd)]
-
-    cmap = mpl.colormaps.get_cmap('tab20').resampled(10)
-    colors = [cmap(i) for i in range(10)]
-    radii = [cloud.R for cloud in teda.c]
-    #ChangePoints = teda.ChangePoint
-    
-    yticks = [i*0.25 for i in range(1,6)]+[0]
-    merged_track = [(sorted(c.track, reverse=True)) for c in teda.c if len(c.track)>1]
-    merged_track = [f'G{cloud[0]} = {cloud[1:]}' for cloud in merged_track]
-    merged_track  = "; ".join(merged_track)
-    if len(merged_track) == 0: merged_track = 'Merged Granules: None'
-    else: merged_track = 'Merged Granules: ' + merged_track
-
-    merged_clouds = []
-    for cloud in teda.c:
-        if len(cloud.track) > 1:
-            merged_clouds.append(cloud.track)
-    for i, array in enumerate(teda.cloud_activation):
-        for ref in merged_clouds:
-            if np.intersect1d(ref, array).size > 0:
-                u = np.intersect1d(ref, array)
-                u[:] = ref[0]
-                teda.cloud_activation[i] = u
-
-    clouds_ID = [cloud.ID for cloud in teda.c]
-    names = [f'G{cloud_ID}' for cloud_ID in clouds_ID]
-
-    for i, cloud in enumerate(teda.cloud_activation):
-        for j, cloud_ID in enumerate(clouds_ID):
-            if np.flip(cloud)[-1] == cloud_ID:
-            #if (cloud)[-1] == cloud_ID:
-                for k in range(len(series)-1):
-                    series[k][j].append(DSIs[k][i])
-                series[-1][j].append(i)
-    
-    fig = plt.figure(figsize=(w, h))
-    fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
-                    wspace=0.12, hspace=0.15)
-    
-    gs = fig.add_gridspec(nrows=len(DSIs), ncols=2, width_ratios=[1, 2.5],
-    wspace=0.125, hspace=0.15)
-    
-    ax1 = fig.add_subplot(gs[:, 0], projection='3d') 
-    axes = [fig.add_subplot(gs[i, 1]) for i in range(len(DSIs))]
-
-    for i in range(len(series[0])):
-        ax1.scatter(series[dsix][i], series[dsiy][i], series[dsiz][i], 
-                marker='o', s=m1*5, label=names[i], color=colors[i], alpha=0.6)
-        ax1.scatter(teda.c[i].mean[0], teda.c[i].mean[1], teda.c[i].mean[2], 
-                color='black', marker='x', s=m2*10)
-        
-        center = teda.c[i].mean
-        ax1.scatter(center[0], center[1], center[2], 
-                    color='black', marker='x', s=m2*10)
-
-        # 3. Cálculo e Plot da Esfera (Volume ocupado)
-        if radii is not None :
-        #if radii is not None and i !=0:
-            r = radii[i]
-            
-            # Criar a malha esférica (u: longitude, v: latitude)
-            u = np.linspace(0, 2 * np.pi, 20)
-            v = np.linspace(0, np.pi, 20)
-            
-            # Coordenadas paramétricas da esfera
-            x = r * np.outer(np.cos(u), np.sin(v)) + center[0]
-            y = r * np.outer(np.sin(u), np.sin(v)) + center[1]
-            z = r * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
-
-            # Plotar a superfície transparente
-            ax1.plot_surface(x, y, z, color=colors[i], alpha=0.1, 
-                            linewidth=0, antialiased=True)
-            
-            # Opcional: Adicionar um aramado (wireframe) sutil para dar volume
-            ax1.plot_wireframe(x, y, z, color=colors[i], alpha=0.1, linewidth=0.5)
-    
-    ax1.scatter([], [], [], color='black', marker='x', s=m2*10, label='G centroid')
-
-    ax1.set_xlabel(f"DSI-{dsix+1}", fontsize=flbl)
-    ax1.set_ylabel(f"DSI-{dsiy+1}", fontsize=flbl)
-    ax1.set_ylabel(f"DSI-{dsiz+1}", fontsize=flbl)
-    ax1.legend(fontsize=flgnd, framealpha=0.85, bbox_to_anchor=anchor, ncol=ncol)
-    ax1.grid()
-    for j,ax in enumerate(axes):
-        #L,U = np.inf,-np.inf
-        for i in range(len(series[0])):
-            ax.plot(series[-1][i], series[j][i], linestyle=' ', marker='o',
-                    markersize=m1, label=None, color=colors[i])
-            
-            if L>np.min(series[j][i]):
-                L = np.min(series[j][i]) -0.15*np.min(series[j][i])
-            else: L = L
-            if U<np.max(series[j][i]):
-                U = np.max(series[j][i])+ 0.05*np.max(series[j][i])
-            else: U = U
-
-            #yticks = list(np.linspace(L, U, 5))
-            #ax.set_ylim(L, U)
-            #ax.set_yticks(sorted(yticks))
-
-            ax.set_ylabel(f"DSI-{j+1} Value", fontsize=flbl)
-            ax.set_xlabel(f"Cycle", fontsize=flbl)
-            #ax.set_yticks(sorted(yticks))
-            
-            if j< len(axes)-1: 
-                ax.set_xlabel('')
-                ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
-            ax.grid()
-        #for cp in ChangePoints:
-        #    ax.plot([cp[0],cp[0]],[L,U], linestyle='--')
-        #    ax.plot([cp[1],cp[1]],[L,U], linestyle='--')
-
-    fig.suptitle(title,y=0.95)
-    if mergeID: fig.text(0.5, 0.1, merged_track, fontsize=10, ha='center', va='bottom', transform=fig.transFigure)
-    if out is not None and title is not None:
-        plt.savefig(out, dpi=500, transparent=False)
-    
-    plt.show()
-
-
 
 def plot_DSI_plotly(teda, start=None, ftrs=None, title=None, 
                     dsix=0, dsiy=1, dsiz=2, opacity_sphere=0.15):
@@ -1648,3 +1519,456 @@ def plot_DSI_3D2(teda, w=15, h=4,ftrs=None, out=None, title=None,
         plt.savefig(out, dpi=500, transparent=False)
     
     plt.show()
+
+def PlotRulPLY(teda, language='pt',
+                  out=None, w=600, h=300):
+    
+    if language == 'pt':
+        title='Predição de RUL'
+        yAxisTitle='RUL/Ciclo'
+        xAxisTitle='Ciclo'
+
+    else:
+        title='RUL Prediction'
+        yAxisTitle='RUL/Cycle'
+        xAxisTitle='Cycle'
+
+    names = ['RUL-R','RUL-P','RUL-L','RUL-U']
+    y=[teda.rulR,teda.rulP,teda.rulL,teda.rulU]
+    x = [[i for i in range(len(y[j]))] for j in range(len(y))]
+    line_modes = ['lines', 'markers']
+    fig = make_subplots(rows=1, cols=1)
+    
+    if names is None:
+        names = [f'Série {i+1}' for i in range(len(y))]
+    
+    markers = [0] * len(y) # Padrão para todos como 'lines'
+
+    for x, y, name, m_idx in zip(x, y, names, markers):
+        mode = line_modes[m_idx] if m_idx < len(line_modes) else 'lines'
+        fig.add_trace(go.Scatter(x=x, y=y, name=name, mode=mode),row=1, col=1)
+
+    fig.update_layout(width=w, height=h, title=title,template='plotly_white')
+    fig.update_yaxes(title_text=yAxisTitle, row=1, col=1,)
+    fig.update_xaxes(title_text=xAxisTitle, row=1, col=1,)
+    if out is not None and title is not None:
+        fig.update_layout(paper_bgcolor='rgba(255, 255, 255, 1)',
+            plot_bgcolor='rgba(255, 255, 255, 1)')
+        fig.write_image(out, scale=5)
+    fig.show()
+
+def PlotRulPLT(teda, language='pt',
+                  out=None, w=6, h=3):
+    
+    if language == 'pt':
+        title='Predição de RUL'
+        yAxisTitle='RUL/Ciclo'
+        xAxisTitle='Ciclo'
+
+    else:
+        title='RUL Prediction'
+        yAxisTitle='RUL/Cycle'
+        xAxisTitle='Cycle'
+
+    names = ['RUL-R','RUL-P','RUL-L','RUL-U']
+    yS = [teda.rulR,teda.rulP,teda.rulL,teda.rulU]
+    xS = [[i for i in range(len(yS[j]))] for j in range(len(yS))]
+    
+    fig, ax = plt.subplots(figsize=(w, h))
+
+    for x, y, name in zip(xS, yS, names):
+    
+        ax.plot(x, y, label=name, linestyle='-', linewidth=1.5)
+
+    ax.set_title(title)
+    ax.set_xlabel(xAxisTitle)
+    ax.set_ylabel(yAxisTitle)
+    ax.grid(True, linestyle='--', alpha=0.6)
+    ax.legend(frameon=True, fontsize='small')
+    plt.tight_layout()
+    if out is not None and title is not None:
+        plt.savefig(out, dpi=500, transparent=False)
+    plt.show()
+
+def PlotDSI_2D_PLT(teda, w=15, h=4,ftrs=None, out=None,
+             lnwdth=0.75,language='pt', ftcks=7, flbl=9, fttl=8.5,
+             flgnd=7, anchor=None, m1=3, m2=4, m3=1, ncol=1):
+    if ftrs is None: ftrs = 2
+
+    if language == 'pt':
+        title=['Granulação Espacial do IED','Granulação Temporal do IED','Predição de RUL']
+        yAxisTitle=['IED','IED/Ciclo','RUL/Ciclo']
+        xAxisTitle=['IED','Ciclo','Ciclo']
+
+    else:
+        title=['IEDs Spatial Granulation','IEDs Temporal Granulation','RUL Prediction']
+        yAxisTitle=['DSI','DSI/Cycle','RUL/Cycle']
+        xAxisTitle=['DSI','Cycle','Cycle']
+
+    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(teda.c))
+    colors = [cmap(i) for i in range(len(teda.c))]
+    colors2 = ['black', 'blue', 'blue', 'blue']
+    linestyles = ['-', '-', '--', '--']
+    names = ['RUL-R','RUL-P',None,None]
+    yS = [teda.rulR,teda.rulP,teda.rulL,teda.rulU]
+    xS = [[i for i in range(len(yS[j]))] for j in range(len(yS))]
+
+    fig = plt.figure(figsize=(w, h))
+    fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
+                    wspace=0.12, hspace=0.15)
+    gs = fig.add_gridspec(nrows=ftrs, ncols=3, width_ratios=[0.65, 1, 1],
+    wspace=0.15, hspace=0.15)
+    ax1 = fig.add_subplot(gs[:, 0]) 
+    ax2 = [fig.add_subplot(gs[i, 1]) for i in range((ftrs))]
+    ax3 = fig.add_subplot(gs[:, 2])
+
+    for i,cloud in enumerate(teda.c):
+        x = np.array(cloud.x).T[-2]
+        y = np.array(cloud.x).T[-1]
+        if len(cloud.track) == 1: lbl = f'G{cloud.ID}'
+        else: lbl = f'G{cloud.ID}: {cloud.track[1:]}'
+            
+        ax1.plot(x,y, linestyle=' ', linewidth=lnwdth, marker='o'
+                          , markersize=m1, label=lbl, color=colors[i])
+        ax1.plot(cloud.mean[-2], cloud.mean[-1], linestyle=' '
+                          , color='black', marker='x', markersize=m2)
+    
+    ax1.plot(cloud.mean[-2], cloud.mean[-1], linestyle=' '
+                          , color='black', marker='x', markersize=m2, label = 'G centroid')
+
+    ax1.set_title(title[0])
+    ax1.set_xlabel(xAxisTitle[0], fontsize=flbl)
+    ax1.set_ylabel(yAxisTitle[0], fontsize=flbl)
+    ax1.legend(fontsize=flgnd, framealpha=0.85, bbox_to_anchor=anchor, ncol=ncol)
+    ax1.grid()
+    for j,ax in enumerate(ax2):
+        L,U = np.inf,-np.inf
+        for i, cloud in enumerate(teda.c):
+            y = np.array(cloud.x).T[-ftrs+j]
+            ax.plot(cloud.t, y, linestyle=' ', marker='o',
+                    markersize=m1, label=None, color=colors[i])
+            
+            if L>np.min(y): L = np.min(y) - 1.15*np.min(y)
+            if U<np.max(y): U = np.max(y) + 0.15*np.max(y)
+
+        yticks = np.round(np.linspace(0, 1, 6), 2).tolist()[1:] + [0]
+        ax.set_yticks(sorted(yticks))
+        #ax.set_ylim(L-0.05*U, U+0.05*U)
+        ax.set_xlabel(xAxisTitle[1], fontsize=flbl)
+        ax.set_ylabel(yAxisTitle[1], fontsize=flbl)
+        
+        if j< len(ax2)-1: 
+            ax.set_xlabel('')
+            ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
+        if j==0: ax.set_title(title[1])
+        ax.grid()
+        
+    for x, y, name, color, linestyle in zip(xS, yS, names, colors2, linestyles):
+    
+        ax3.plot(x, y, label=name, linestyle=linestyle, linewidth=1.5, color=color)
+
+    ax3.set_title(title[2])
+    ax3.set_xlabel(xAxisTitle[2], fontsize=flbl)
+    ax3.set_ylabel(yAxisTitle[2], fontsize=flbl)
+    ax3.grid(True, linestyle='--', alpha=0.6)
+    ax3.legend(frameon=True, fontsize='small')
+
+    if out is not None and title is not None:
+        plt.savefig(out, dpi=500, transparent=False)
+    
+    plt.show()
+
+def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
+             mergeID=False,lnwdth=0.75, ftcks=7, flbl=9, fttl=8.5,
+             flgnd=7, anchor=None, m1=3, m2=4, m3=1, ncol=1):
+    
+    if language == 'pt':
+        title=['Granulação Espacial do IED','Granulação Temporal do IED','Predição de RUL']
+        yAxisTitle=['IED-X','IED/Ciclo','RUL/Ciclo']
+        xAxisTitle=['IED-Y','Ciclo','Ciclo']
+        zAxisTitle=['IED-Z','IED/Ciclo','RUL/Ciclo']
+        glabel = 'Centro-G'
+
+    else:
+        title=['IEDs Spatial Granulation','IEDs Temporal Granulation','RUL Prediction']
+        yAxisTitle=['DSI-X','DSI/Cycle','RUL/Cycle']
+        xAxisTitle=['DSI-Y','Ciclo','Ciclo']
+        zAxisTitle=['DSI-Z','DSI/Cycle','RUL/Cycle']
+        glabel = 'G-Center'
+
+    L,U = np.inf,-np.inf
+    
+    cmap = mpl.colormaps.get_cmap('seismic').resampled(len(teda.c))
+    colors = (np.array([cmap(i) for i in range(1+len(teda.c))]))
+    colors2 = ['black', 'blue', 'blue', 'blue']
+    linestyles = ['-', '-', '--', '--']
+    names = ['RUL-R','RUL-P',None,None]
+    yS = [teda.rulR,teda.rulP,teda.rulL,teda.rulU]
+    xS = [[i for i in range(len(yS[j]))] for j in range(len(yS))]
+    radii = [cloud.Rmax for cloud in teda.c]
+    yticks = [i*0.25 for i in range(1,6)]+[0]
+    merged_track = [(sorted(c.track, reverse=True)) for c in teda.c if len(c.track)>1]
+    merged_track = [f'G{cloud[0]} = {cloud[1:]}' for cloud in merged_track]
+    merged_track  = "; ".join(merged_track)
+    if len(merged_track) == 0: merged_track = 'Merged Granules: None'
+    else: merged_track = 'Merged Granules: ' + merged_track
+
+    merged_clouds = []
+    for cloud in teda.c:
+        if len(cloud.track) > 1:
+            merged_clouds.append(cloud.track)
+
+
+
+    fig = plt.figure(figsize=(w, h))
+    fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
+                    wspace=0.12, hspace=0.5)
+    
+    gs = fig.add_gridspec(nrows=ftrs, ncols=3, width_ratios=[1, 1, 1],
+                            wspace=0.25, hspace=0.15)
+    ax1 = fig.add_subplot(gs[:, 0], projection='3d') 
+    ax2 = [fig.add_subplot(gs[i, 1]) for i in range((ftrs))]
+    ax3 = fig.add_subplot(gs[:, 2])
+
+    for i, cloud in enumerate(teda.c):
+        for x in cloud.x:
+            ax1.scatter(x[0], x[1], x[2], 
+                color=colors[i], alpha=0.5, marker='o', s=m2*3)
+
+        center = cloud.mean
+        ax1.scatter([], [], [],label=f'G{cloud.ID}',
+                    color=colors[i], marker='o', s=m2*5)
+        ax1.scatter(center[0], center[1], center[2],
+                    color='red', marker='x', s=m2*25,linewidths=2.5)
+
+        if radii is not None :
+            r = radii[i]
+            u = np.linspace(0, 2 * np.pi, 20)
+            v = np.linspace(0, np.pi, 20)
+            x = r * np.outer(np.cos(u), np.sin(v)) + center[0]
+            y = r * np.outer(np.sin(u), np.sin(v)) + center[1]
+            z = r * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
+            ax1.plot_surface(x, y, z, color=colors[i], alpha=0.1, 
+                            linewidth=0, antialiased=True)
+            ax1.plot_wireframe(x, y, z, color=colors[i], alpha=0.25, linewidth=0.5)
+    
+    
+    ax1.scatter([], [], [], color='red', marker='x', s=m2*10, label=glabel)
+    ax1.set_title(title[0])
+    ax1.set_xlabel(xAxisTitle[0], fontsize=flbl)
+    ax1.set_ylabel(yAxisTitle[0], fontsize=flbl)
+    ax1.set_zlabel(zAxisTitle[0], fontsize=flbl)
+    ax1.legend(fontsize=flgnd, framealpha=0.85, bbox_to_anchor=anchor, ncol=ncol)
+    ax1.grid()
+    for j,ax in enumerate(ax2):
+        L,U = np.inf,-np.inf
+        for i, cloud in enumerate(teda.c):
+            y = np.array(cloud.x).T[-ftrs+j]
+            ax.plot(cloud.t, y, linestyle=' ', marker='o',
+                    markersize=m1, label=None, color=colors[i])
+            
+            if L>np.min(y): L = np.min(y) - 1.15*np.min(y)
+            if U<np.max(y): U = np.max(y) + 0.15*np.max(y)
+
+        yticks = np.round(np.linspace(0, 1, 6), 2).tolist()[1:] + [0]
+        ax.set_yticks(sorted(yticks))
+        #ax.set_ylim(L-0.05*U, U+0.05*U)
+        ax.set_xlabel(xAxisTitle[1], fontsize=flbl)
+        ax.set_ylabel(yAxisTitle[1], fontsize=flbl)
+        
+        if j< len(ax2)-1: 
+            ax.set_xlabel('')
+            ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
+        if j==0: ax.set_title(title[1])
+        ax.grid()
+
+    for x, y, name, color, linestyle in zip(xS, yS, names, colors2, linestyles):
+    
+        ax3.plot(x, y, label=name, linestyle=linestyle, linewidth=1.5, color=color)
+
+    ax3.set_title(title[2])
+    ax3.set_xlabel(xAxisTitle[2], fontsize=flbl)
+    ax3.set_ylabel(yAxisTitle[2], fontsize=flbl)
+    ax3.grid(True, linestyle='--', alpha=0.6)
+    ax3.legend(frameon=True, fontsize='small')
+
+    if mergeID: fig.text(0.5, 0.1, merged_track, fontsize=10, ha='center', va='bottom', transform=fig.transFigure)
+    if out is not None and title is not None:
+        plt.savefig(out, dpi=500, transparent=False)
+    
+    plt.show()
+
+def PlotDSI_3D_PLY(teda, w=1200, h=500, start=None, ftrs=3, out=None, language='pt',
+                   mergeID=False, m1=4, m2=4, fttl=14):
+    
+    if language == 'pt':
+        title = ['Granulação Espacial do IED', 'Granulação Temporal do IED', 'Predição de RUL']
+        yAxisTitle = ['IED-X', 'IED/Ciclo', 'RUL/Ciclo']
+        xAxisTitle = ['IED-Y', 'Ciclo', 'Ciclo']
+        zAxisTitle = ['IED-Z', 'IED/Ciclo', 'RUL/Ciclo']
+        glabel = 'Centro-G'
+    else:
+        title = ['IEDs Spatial Granulation', 'IEDs Temporal Granulation', 'RUL Prediction']
+        yAxisTitle = ['DSI-X', 'DSI/Cycle', 'RUL/Cycle']
+        xAxisTitle = ['DSI-Y', 'Ciclo', 'Ciclo']
+        zAxisTitle = ['DSI-Z', 'DSI/Cycle', 'RUL/Cycle']
+        glabel = 'G-Center'
+
+    # 1. Configuração do mapa de cores usando as paletas nativas do Plotly
+    # Usando a escala divergente 'seismic' mapeada para formato Hex
+    colors_pos = np.linspace(0, 1, len(teda.c))
+    colors_hex = [px.colors.sample_colorscale('RdBu_r', p)[0] for p in colors_pos]
+    
+    # Configuração dos dados de RUL (Subplot 3)
+    yS = [teda.rulR, teda.rulP, teda.rulL, teda.rulU]
+    xS = [[i for i in range(len(yS[j]))] for j in range(len(yS))]
+    names = ['RUL-R', 'RUL-P', 'RUL-L', 'RUL-U']
+    colors2 = ['black', 'blue', 'blue', 'blue']
+    dash_styles = ['solid', 'solid', 'dash', 'dash']
+    radii = [cloud.Rmax for cloud in teda.c]
+
+    # Processamento do texto das tracking labels (MergeID)
+    merged_track = [(sorted(c.track, reverse=True)) for c in teda.c if len(c.track) > 1]
+    merged_track = [f'G{cloud[0]} = {cloud[1:]}' for cloud in merged_track]
+    merged_track = "; ".join(merged_track)
+    if len(merged_track) == 0: 
+        merged_track = 'Merged Granules: None'
+    else: 
+        merged_track = 'Merged Granules: ' + merged_track
+
+    # --- 2. Criação do Layout de Subplots com Grid Misto ---
+    # Coluna 1: Gráfico 3D (ocupa todas as linhas)
+    # Coluna 2: ftrs subplots empilhados verticalmente
+    # Coluna 3: Gráfico 2D de RUL (ocupa todas as linhas)
+    
+    grid_specs = [[{"type": "scene", "rowspan": ftrs}, {"type": "xy"}, {"type": "xy", "rowspan": ftrs}]]
+    for _ in range(ftrs - 1):
+        grid_specs.append([None, {"type": "xy"}, None])
+
+    fig = make_subplots(
+        rows=ftrs, cols=3,
+        specs=grid_specs,
+        column_width=[1, 1, 1],
+        subplot_titles=(title[0], title[1], title[2]),
+        horizontal_spacing=0.08,
+        vertical_spacing=0.05
+    )
+
+    # --- 3. Plotagem da Coluna 1: Espacial 3D ---
+    for i, cloud in enumerate(teda.c):
+        pontos = np.array(cloud.x)
+        if pontos.size > 0:
+            fig.add_trace(go.Scatter3d(
+                x=pontos[:, 0], y=pontos[:, 1], z=pontos[:, 2],
+                mode='markers',
+                marker=dict(size=m2, color=colors_hex[i], opacity=0.75),
+                name=f'G{cloud.ID} Points',
+                legendgroup=f'G{cloud.ID}',
+                showlegend=False
+            ), row=1, col=1)
+
+        # Centro do Grânulo (Marcador X)
+        center = cloud.mean
+        fig.add_trace(go.Scatter3d(
+            x=[center[0]], y=[center[1]], z=[center[2]],
+            mode='markers',
+            marker=dict(symbol='x', size=m2 , color='red', line=dict(width=1)),
+            name=f'G{cloud.ID} ({glabel})',
+            legendgroup=f'G{cloud.ID}',
+            showlegend=False
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter3d(
+            x=[], y=[], z=[],
+            mode='markers',
+            marker=dict(symbol='x', size=m2 , color='red', line=dict(width=1)),
+            name=f'G{cloud.ID} ({glabel})',
+            legendgroup=f'G{cloud.ID}',
+            showlegend=True
+        ), row=1, col=1)
+
+
+        # Superfície da Hiperesfera (Malha 3D)
+        if radii is not None:
+            r = radii[i]
+            u = np.linspace(0, 2 * np.pi, 25)
+            v = np.linspace(0, np.pi, 25)
+            x_sph = r * np.outer(np.cos(u), np.sin(v)) + center[0]
+            y_sph = r * np.outer(np.sin(u), np.sin(v)) + center[1]
+            z_sph = r * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
+
+            fig.add_trace(go.Surface(
+                x=x_sph, y=y_sph, z=z_sph,
+                colorscale=[[0, colors_hex[i]], [1, colors_hex[i]]],
+                opacity=0.15,
+                showscale=False,
+                legendgroup=f'G{cloud.ID}',
+                showlegend=False
+            ), row=1, col=1)
+
+    # --- 4. Plotagem da Coluna 2: Temporal Específico (ax2) ---
+    for j in range(ftrs):
+        for i, cloud in enumerate(teda.c):
+            y_val = np.array(cloud.x).T[-ftrs + j]
+            fig.add_trace(go.Scatter(
+                x=cloud.t, y=y_val,
+                mode='markers',
+                marker=dict(size=m1, color=colors_hex[i]),
+                showlegend=False
+            ), row=j + 1, col=2)
+        
+        if j == ftrs - 1:
+            fig.update_xaxes(title_text=xAxisTitle[1], row=j + 1, col=2)
+        else:
+            fig.update_xaxes(showticklabels=False, row=j + 1, col=2)
+            
+        fig.update_yaxes(title_text=yAxisTitle[1], row=j + 1, col=2)
+
+    # --- 5. Plotagem da Coluna 3: Predição de RUL (ax3) ---
+    for x_arr, y_arr, name, color, dash in zip(xS, yS, names, colors2, dash_styles):
+        if name is not None:
+            fig.add_trace(go.Scatter(
+                x=x_arr, y=y_arr,
+                mode='lines',
+                name=name,
+                line=dict(color=color, width=2, dash=dash)
+            ), row=1, col=3)
+
+    fig.update_xaxes(title_text=xAxisTitle[2], row=1, col=3)
+    fig.update_yaxes(title_text=yAxisTitle[2], row=1, col=3)
+
+    # --- 6. Ajustes de Layout e Design do Painel Geral ---
+    fig.update_layout(
+        width=w if w > 500 else 1200, 
+        height=h if h > 200 else 600,
+        template='plotly_white',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=20, r=20, t=80, b=60)
+    )
+
+    # Atualizando rótulos dos eixos do ambiente 3D (Cenário 1)
+    fig.update_scenes(
+        xaxis_title=xAxisTitle[0],
+        yaxis_title=yAxisTitle[0],
+        zaxis_title=zAxisTitle[0],
+        aspectmode='cube',
+        row=1, col=1
+    )
+
+    # Adiciona a anotação com os grânulos unidos no rodapé caso mergeID seja True
+    if mergeID:
+        fig.add_annotation(
+            text=f"<b>{merged_track}</b>",
+            xref="paper", yref="paper",
+            x=0.5, y=-0.12,
+            showarrow=False,
+            font=dict(size=11, color="black"),
+            align="center"
+        )
+
+    # Exportação estática de imagem se um caminho de saída for fornecido
+    if out is not None:
+        fig.write_image(out, scale=3)
+
+    fig.show()
