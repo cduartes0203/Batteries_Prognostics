@@ -1605,8 +1605,8 @@ def PlotDSI_2D_PLT(teda, w=15, h=4,ftrs=None, out=None,
         yAxisTitle=['DSI','DSI/Cycle','RUL/Cycle']
         xAxisTitle=['DSI','Cycle','Cycle']
 
-    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(teda.c))
-    colors = [cmap(i) for i in range(len(teda.c))]
+    cmap = mpl.colormaps.get_cmap('seismic').resampled(len(teda.c))
+    colors = [cmap(i) for i in range(1+len(teda.c))]
     colors2 = ['black', 'blue', 'blue', 'blue']
     linestyles = ['-', '-', '--', '--']
     names = ['RUL-R','RUL-P',None,None]
