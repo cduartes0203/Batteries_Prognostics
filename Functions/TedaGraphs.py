@@ -1732,10 +1732,11 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
 
     for i, cloud in enumerate(teda.c):
         for x in cloud.x:
+            x = x[-3:]
             ax1.scatter(x[0], x[1], x[2], 
                 color=colors[i], alpha=0.5, marker='o', s=m2*3)
 
-        center = cloud.mean
+        center = cloud.mean[-3:]
         ax1.scatter([], [], [],label=f'G{cloud.ID}',
                     color=colors[i], marker='o', s=m2*5)
         ax1.scatter(center[0], center[1], center[2],
