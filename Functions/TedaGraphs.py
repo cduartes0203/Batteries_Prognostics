@@ -1678,9 +1678,9 @@ def PlotDSI_2D_PLT(teda, w=15, h=4,ftrs=None, out=None,
     
     plt.show()
 
-def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
+def PlotDSI_3D_PLT(teda, w=15, h=4,yi=None,yf=None,xi=None,xf=None,ftrs=3, out=None, language='pt',
              mergeID=False,lnwdth=0.75, ftcks=7, flbl=9, fttl=8.5,
-             flgnd=7, anchor=None, m1=3, m2=4, m3=1, ncol=1):
+             flgnd=7, loc=None,anchor=None, m1=4, m2=3, m3=4, ncol=1):
     
     if language == 'pt':
         title=['Granulação Espacial do IED','Granulação Temporal do IED','Predição de RUL']
@@ -1692,7 +1692,7 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
     else:
         title=['IEDs Spatial Granulation','IEDs Temporal Granulation','RUL Prediction']
         yAxisTitle=['DSI-X','DSI/Cycle','RUL/Cycle']
-        xAxisTitle=['DSI-Y','Ciclo','Ciclo']
+        xAxisTitle=['DSI-Y','Cycle','Cycle']
         zAxisTitle=['DSI-Z','DSI/Cycle','RUL/Cycle']
         glabel = 'G-Center'
 
@@ -1704,7 +1704,7 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
     linestyles = ['-', '-', '--', '--']
     names = ['RUL-R','RUL-P',None,None]
     yS = [teda.rulR,teda.rulP,teda.rulL,teda.rulU]
-    xS = [[i for i in range(len(yS[j]))] for j in range(len(yS))]
+    xS = teda.t
     radii = [cloud.Rmax for cloud in teda.c]
     yticks = [i*0.25 for i in range(1,6)]+[0]
     merged_track = [(sorted(c.track, reverse=True)) for c in teda.c if len(c.track)>1]
@@ -1718,13 +1718,11 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
         if len(cloud.track) > 1:
             merged_clouds.append(cloud.track)
 
-
-
     fig = plt.figure(figsize=(w, h))
     fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
                     wspace=0.12, hspace=0.5)
     
-    gs = fig.add_gridspec(nrows=ftrs, ncols=3, width_ratios=[1, 1, 1],
+    gs = fig.add_gridspec(nrows=ftrs, ncols=3, width_ratios=[1, 1, 1.5],
                             wspace=0.25, hspace=0.15)
     ax1 = fig.add_subplot(gs[:, 0], projection='3d') 
     ax2 = [fig.add_subplot(gs[i, 1]) for i in range((ftrs))]
@@ -1734,13 +1732,13 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
         for x in cloud.x:
             x = x[-3:]
             ax1.scatter(x[0], x[1], x[2], 
-                color=colors[i], alpha=0.5, marker='o', s=m2*3)
+                color=colors[i], alpha=0.5, marker='o', s=m1*3)
 
         center = cloud.mean[-3:]
         ax1.scatter([], [], [],label=f'G{cloud.ID}',
                     color=colors[i], marker='o', s=m2*5)
         ax1.scatter(center[0], center[1], center[2],
-                    color='red', marker='x', s=m2*25,linewidths=2.5)
+                    color='red', marker='x', s=m1*25,linewidths=2.5)
 
         if radii is not None :
             r = radii[i]
@@ -1749,9 +1747,9 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
             x = r * np.outer(np.cos(u), np.sin(v)) + center[0]
             y = r * np.outer(np.sin(u), np.sin(v)) + center[1]
             z = r * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
-            ax1.plot_surface(x, y, z, color=colors[i], alpha=0.1, 
+            ax1.plot_surface(x, y, z, color=colors[i], alpha=0.15, 
                             linewidth=0, antialiased=True)
-            ax1.plot_wireframe(x, y, z, color=colors[i], alpha=0.25, linewidth=0.5)
+            ax1.plot_wireframe(x, y, z, color=colors[i], alpha=0.4, linewidth=0.4)
     
     
     ax1.scatter([], [], [], color='red', marker='x', s=m2*10, label=glabel)
@@ -1759,14 +1757,20 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
     ax1.set_xlabel(xAxisTitle[0], fontsize=flbl)
     ax1.set_ylabel(yAxisTitle[0], fontsize=flbl)
     ax1.set_zlabel(zAxisTitle[0], fontsize=flbl)
-    ax1.legend(fontsize=flgnd, framealpha=0.85, bbox_to_anchor=anchor, ncol=ncol)
-    ax1.grid()
+    ax1.legend(fontsize=flgnd, facecolor="#d9d9d9", framealpha=1,loc=loc,bbox_to_anchor=anchor, ncol=ncol)
+    #ax1.set_facecolor("#727272")  # Dark gray background
+    # Set pane colors to a light gray shade
+    ax1.w_xaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.w_yaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.w_zaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.grid(color='gray', linestyle='--', linewidth=0.5)
+
     for j,ax in enumerate(ax2):
         L,U = np.inf,-np.inf
         for i, cloud in enumerate(teda.c):
             y = np.array(cloud.x).T[-ftrs+j]
             ax.plot(cloud.t, y, linestyle=' ', marker='o',
-                    markersize=m1, label=None, color=colors[i])
+                    markersize=m2, label=None, color=colors[i])
             
             if L>np.min(y): L = np.min(y) - 1.15*np.min(y)
             if U<np.max(y): U = np.max(y) + 0.15*np.max(y)
@@ -1781,15 +1785,21 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,start=None,ftrs=3, out=None, language='pt',
             ax.set_xlabel('')
             ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
         if j==0: ax.set_title(title[1])
+        ax.set_facecolor("#d9d9d9") 
         ax.grid()
 
-    for x, y, name, color, linestyle in zip(xS, yS, names, colors2, linestyles):
+    for y, name, color, linestyle in zip(yS, names, colors2, linestyles):
+        ax3.plot(xS, y, label=name, linestyle=linestyle, linewidth=1.5, color=color)
     
-        ax3.plot(x, y, label=name, linestyle=linestyle, linewidth=1.5, color=color)
+    for i, cloud in enumerate(teda.c):
+        ax3.plot(cloud.t2,cloud.rulM, linestyle=' ', marker='o', markersize=m3, color=colors[i], label=None)
+        #ax3.plot(cloud.t2,cloud.rulM, linestyle=' ', marker='o', markersize=m1, color=colors[i], label=None)
 
     ax3.set_title(title[2])
     ax3.set_xlabel(xAxisTitle[2], fontsize=flbl)
     ax3.set_ylabel(yAxisTitle[2], fontsize=flbl)
+    ax3.set_xlim(xi, xf)
+    ax3.set_ylim(yi, yf)
     ax3.grid(True, linestyle='--', alpha=0.6)
     ax3.legend(frameon=True, fontsize='small')
 
