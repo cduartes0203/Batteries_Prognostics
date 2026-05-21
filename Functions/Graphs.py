@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib as mpl
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
@@ -598,14 +600,14 @@ def plot_3d_fft(df,width=600,height=600,title = 'r',xlabel = 'Frequency (Hz)',yl
     fig = go.Figure(data=traces, layout=layout)
     fig.show()
 
-def plot_dataframe2(df, df2, df3,label = '1',label1 = '2',label2 = '3'):
+def plot_dataframe2(dataframes,w=12,h=6):
     # Number of columns and rows for subplots
     num_cols = len(df.columns)
     num_plots_per_row = 4
     num_rows = (num_cols + num_plots_per_row - 1) // num_plots_per_row  # Ceiling division
 
     # Create subplots with the given number of rows and columns (4 per row)
-    fig, axes = plt.subplots(num_rows, num_plots_per_row, figsize=(20, 5 * num_rows))
+    fig, axes = plt.subplots(num_rows, num_plots_per_row, figsize=(w,h))
     fig.suptitle("DataFrame Columns Plotted", fontsize=16)
 
     # Flatten axes array to easily iterate through (if needed for 2D grid of axes)
@@ -640,7 +642,6 @@ def plot_features(df, cols_qtd=4, brng='brng', show=True, w=12, h=2.5,ylim=[None
 
     # Criar figura e subplots
     fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(w, h))
-    if show_title: fig.suptitle(f'Features - {brng}', fontsize=10)  # Título principal
     
     # Garantir que `axes` seja sempre uma matriz 2D
     if nr == 1 and nc == 1:
@@ -652,11 +653,14 @@ def plot_features(df, cols_qtd=4, brng='brng', show=True, w=12, h=2.5,ylim=[None
 
     # Loop sobre cada coluna do DataFrame e adiciona ao subplot correspondente
     for i, column in enumerate(df.columns):
-        axes[i].plot(df.index, df[column], label=f'{brng[:-4]}_'+column)
-        axes[i].set_title(f'{brng}_'+column, fontsize=10)
-        axes[i].set_ylim(ylim[0],ylim[1])
+        axes[i].plot(df.index, df[column], label=column)
         axes[i].grid(True)
         axes[i].tick_params(axis="both", labelsize=8)
+        axes[i].legend()
+        if i< nr-1: 
+            axes[i].set_xlabel('')
+            axes[i].tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
+            
 
     # Remover subplots vazios, se existirem
     for j in range(i + 1, len(axes)):
@@ -883,3 +887,44 @@ def plot_multiple_features(dfs,out, cols_qtd, brngs, labels, show=True, w=12, h=
         plt.savefig(out+'Features.eps', dpi=500)
         plt.savefig(out+'Features.png', dpi=500)
         plt.show()
+
+def PlotDataframes(dataframes, cols_qtd=4,w=12,h=8):
+
+    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(dataframes))
+    colors = (np.array([cmap(i) for i in range(1+len(dataframes))]))
+
+    nc = cols_qtd  # Número de colunas
+    nr = -(-dataframes[0].shape[1] // nc)  # Cálculo do número de linhas (ceil)
+
+    # Criar figura e subplots
+    fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(w, h))
+    fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
+                    wspace=0.001, hspace=0.001)
+    fig.add_gridspec(wspace=0.25, hspace=0.15)
+    
+    # Garantir que `axes` seja sempre uma matriz 2D
+    if nr == 1 and nc == 1:
+        axes = np.array([[axes]])  # Se for um único subplot, ajusta para matriz 2D
+    elif nr == 1 or nc == 1:
+        axes = np.reshape(axes, (-1, nc))  # Se for linha ou coluna única, ajusta matriz corretamente
+    
+    axes = axes.flatten() 
+    # Plot each column in a subplot
+    for i, col in enumerate(dataframes[0].columns):
+        ax = axes[i]
+        for j,df in enumerate(dataframes):
+            ax.plot(df.index, df[col], label=f'{j+1}', color=colors[j])
+        #ax.set_title(col, fontsize=10)
+        ax.legend(fontsize=8,ncol=len(dataframes))
+        ax.grid(True)
+        if i< nr*nc-cols_qtd: 
+            ax.set_xlabel('')
+            ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
+
+    # Hide any unused subplots if the number of columns is not a multiple of 4
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for suptitle
+    plt.show()
