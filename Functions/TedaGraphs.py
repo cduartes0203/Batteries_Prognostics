@@ -2243,3 +2243,121 @@ def PlotPred_3D_PLT(teda, w=15, h=4,yi=None,yf=None,xi=None,xf=None,ftrs=3, out=
         plt.savefig(out, dpi=500, transparent=False)
     
     plt.show()
+
+
+def PlotGranulesSpace(teda, mode='markers',hold=False,
+                       axis_titles=None, title="DSI Granulation", w=500, h=500):
+    
+    if axis_titles is None:
+        xaxis_title, yaxis_title, zaxis_title = ['X Axis', 'Y Axis', 'Z Axis']
+    else:
+        xaxis_title, yaxis_title, zaxis_title = axis_titles
+
+    fig = go.Figure()
+    colors = px.colors.sample_colorscale("Jet", np.linspace(0, 1, len(teda.c)))
+
+    for i, (cloud, color) in enumerate(zip(teda.c, colors)):
+        coords = np.array(cloud.x)
+        x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
+        mx, my, mz = cloud.mean
+        r = cloud.Rmax
+        
+        u = np.linspace(0, 2 * np.pi, 18)
+        v = np.linspace(0, np.pi, 18)
+        sx = r * np.outer(np.cos(u), np.sin(v)) + mx
+        sy = r * np.outer(np.sin(u), np.sin(v)) + my
+        sz = r * np.outer(np.ones(np.size(u)), np.cos(v)) + mz
+        
+        wf_x, wf_y, wf_z = [], [], []
+
+        # Horizontal lines (parallels)
+        for i_u in range(sx.shape[0]):
+            wf_x.extend(list(sx[i_u, :]) + [None])
+            wf_y.extend(list(sy[i_u, :]) + [None])
+            wf_z.extend(list(sz[i_u, :]) + [None])
+
+        # Vertical lines (meridians)
+        for j_v in range(sx.shape[1]):
+            wf_x.extend(list(sx[:, j_v]) + [None])
+            wf_y.extend(list(sy[:, j_v]) + [None])
+            wf_z.extend(list(sz[:, j_v]) + [None])
+        
+        # 2. Define Traces
+        data_trace = go.Scatter3d(
+            x=x, y=y, z=z,
+            mode=mode,
+            marker=dict(size=3, color=color, opacity=0.5,
+                        line=dict(color=color, width=1)),
+            name=f'G{cloud.ID} Points',
+            legendgroup=f'G{cloud.ID}',
+            text=[f"x: {px_val:.2f}<br>y: {py_val:.2f}<br>z: {pz_val:.2f}" for px_val, py_val, pz_val in zip(x, y, z)],
+            hovertemplate="%{text}<extra></extra>",
+            showlegend=True
+        )
+
+        '''surface_trace = go.Surface(
+            z=sz, x=sx, y=sy,
+            colorscale=[[0, color], [1, color]],
+            showscale=False,
+            name=f'G{cloud.ID} Sphere',
+            hoverinfo='skip',
+            opacity=0.10,
+            showlegend=False
+        )'''
+
+        wireframe_trace = go.Scatter3d(
+            x=wf_x, y=wf_y, z=wf_z,
+            mode='lines',
+            line=dict(color=color, width=1.5),
+            opacity=0.75,
+            hoverinfo='skip',
+            legendgroup=f'G{cloud.ID}',
+            showlegend=False
+        )
+
+        surface_trace = go.Scatter3d(
+            x=[mx], y=[my], z=[mz],
+            marker=dict(color=color,size=[0.5],sizemode='diameter'),
+            showlegend=False)
+
+        mean_trace = go.Scatter3d(
+            x=[mx], y=[my], z=[mz],
+            mode=mode,
+            marker=dict(symbol='x', size=5, color='Magenta'),
+            #marker=dict(color=color,size=[1],sizemode='diameter'),
+            name='G Mean',
+            hoverinfo='skip',
+            showlegend=(True if i == len(teda.c) - 1 else False)
+        )
+        
+        # 3. Add traces without 'row' and 'col' parameters
+        fig.add_trace(surface_trace)
+        fig.add_trace(wireframe_trace)
+        fig.add_trace(data_trace)
+        fig.add_trace(mean_trace)
+
+    # 4. Layout and 3D Scene Configuration
+    fig.update_layout(
+        title=title,
+        width=w,
+        height=h,
+        hovermode='closest',
+        template="plotly_white",
+        scene=dict(
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            zaxis_title=zaxis_title,
+            aspectmode='cube',
+            camera=dict(
+                eye=dict(x=-1.5, y=1.5, z=1.2),
+                center=dict(x=0, y=0, z=0),
+                up=dict(x=0, y=0, z=1)
+            )
+        ),
+        margin=dict(t=50, b=40, l=40, r=40)
+    )
+
+    if hold:
+        return fig
+    else: 
+        fig.show()
