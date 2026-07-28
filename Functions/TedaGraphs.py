@@ -2096,10 +2096,11 @@ def PlotDSI_3D_PLT(teda, w=15, h=4,yi=None,yf=None,xi=None,xf=None,ftrs=3, out=N
 
     for y, name, color, linestyle in zip(yS, names, colors2, linestyles):
         ax3.plot(xS, y, label=name, linestyle=linestyle, linewidth=1.5, color=color)
+    ax3.plot(xS, teda.rulR*0.75, label=None, linestyle='--', linewidth=1.5, color='black')
+    ax3.plot(xS, teda.rulR*1.25, label=None, linestyle='--', linewidth=1.5, color='black')
     
     for i, cloud in enumerate(teda.c):
         ax3.plot(cloud.t2,cloud.rulM, linestyle=' ', marker='o', markersize=m3, color=colors[i], label=None)
-        #ax3.plot(cloud.t2,cloud.rulM, linestyle=' ', marker='o', markersize=m1, color=colors[i], label=None)
 
     ax3.set_title(title[2])
     ax3.set_xlabel(xAxisTitle[2], fontsize=flbl)

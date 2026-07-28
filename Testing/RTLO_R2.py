@@ -2,14 +2,14 @@ import numpy as np
 from Functions.Utils_RTLO import *
 
 class RTLO:
-    def __init__(self, nI,nR,nO,ηS=[0.1,0.1,0.1], τ=10,mode='past'):
+    def __init__(self, nI,nR,nO,ηS=[0.1,0.1,0.1], τ=10,mode='past',act='tanh'):
         np.random.seed(42)
         self.k = 1
         self.j = nI-1
         self.t = np.array([])
         self.start = 0
         self.ref = None
-        self.act = 'tanh'
+        self.act = act
         self.flw = mode
         self.n = -1
         self.nI, self.nR, self.nO = nI, nR, nO
