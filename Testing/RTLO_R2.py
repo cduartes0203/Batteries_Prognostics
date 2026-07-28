@@ -102,42 +102,67 @@ class RTLO:
         return yP
     
     def PredictIntr(self,xP,xL,xU,ep,show=False):
+
         if self.flw != 'past': self.n = 0
         wR,wI,wO = self.wR,self.wI,self.wO
-        hP,hU,hL = self.hP2.copy(),self.hU2.copy(),self.hL2.copy()
+        hP,hU,hL = self.hP2.copy(),self.hP2.copy(),self.hP2.copy()
 
-        if show:
-            print('hP antes:', hP[-5:])
-
+        
         wRU, wRL = np.maximum((1+ep)*wR, wR/(1+ep)), np.minimum((1+ep)*wR, wR/(1+ep))
         wIU, wIL = np.maximum((1+ep)*wI, wI/(1+ep)), np.minimum((1+ep)*wI, wI/(1+ep))
         wOU, wOL = np.maximum((1+ep)*wO, wO/(1+ep)), np.minimum((1+ep)*wO, wO/(1+ep))
         
+        if show:
+            #print(( wO @ hP))
+            print('h',hL)
+            print('h',hP)
+            print('h',hU)
+
         uP = ( wR @ hP) + ( wI @ xP)
         uL = (wRL @ hL) + (wIL @ xL)
         uU = (wRU @ hU) + (wIU @ xU)
-
         
         uU, uL = np.maximum(uU,uL), np.minimum(uU,uL)
+        #stacked = np.array([uP, uL, uU])
+        #uL,uP,uU = np.sort(stacked, axis=0)
         
         hP = hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
         hL = hL*(1-1/self.τ) + Activation(uL,self.act)/self.τ
         hU = hU*(1-1/self.τ) + Activation(uU,self.act)/self.τ
+
         hU, hL = np.maximum(hU,hL), np.minimum(hU,hL)
+        #stacked = np.array([hP, hL, hU])
+        #hL,hP,hU = np.sort(stacked, axis=0)
 
         yP = ( wO @ hP)
         yL = (wOL @ hL)
         yU = (wOU @ hU)
+
+        #y = np.sort(np.array([yP,yL,yU]))
         yU, yL = np.maximum(yU, yL), np.minimum(yU, yL)
 
         yP = yP[self.n]
         yL = yL[self.n]
         yU = yU[self.n]
 
+        #y = np.sort(np.array([yP,yL,yU]))
+        #yL,yP, yU = y
+
         if show:
-            print('uP:',uP[-5:])
-            print('hP depois:',hP[-5:])
-            print('xP antes:', xP[-3:],'yP:',yP)
+            #print(( wO @ hP))
+            #print('u',uP-uL)
+            #print('u',uU-uP)
+            #print('h',hP-hL)
+            #print('h',hU-hP)
+            #print('uL:',uL[-5:])
+            #print('uP:',uP[-5:])
+            #print('uU:',uU[-5:])
+            #print('hL depois:',hL[-5:])
+            #print('hP depois:',hP[-5:])
+            #print('hU depois:',hU[-5:])
+            #print('xP antes:', xL[-3:],'yL:',yL)
+            #print('xP antes:', xP[-3:],'yP:',yP)
+            #print('xP antes:', xU[-3:],'yU:',yU)
             print('-----------------')
 
         
@@ -152,6 +177,7 @@ class RTLO:
         self.hP2 = self.hP
         self.hL2 = self.hP
         self.hU2 = self.hP
+
 
     def ReturnParameters(self):
 

@@ -1,11 +1,14 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib as mpl
+import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 import pandas as pd
 from Functions.Utils import *
+from scipy.signal import stft
+from scipy.signal import hilbert
 
 def PlotPLY(x=None,y=None,w=400,h=400,title='r'):
     if x is None: x = [i for i in range(len(y))]
@@ -888,7 +891,7 @@ def plot_multiple_features(dfs,out, cols_qtd, brngs, labels, show=True, w=12, h=
         plt.savefig(out+'Features.png', dpi=500)
         plt.show()
 
-def PlotDataframes(dataframes, cols_qtd=4,w=12,h=8):
+'''def PlotDataframes(dataframes, cols_qtd=4,w=12,h=8):
 
     cmap = mpl.colormaps.get_cmap('tab20').resampled(len(dataframes))
     colors = (np.array([cmap(i) for i in range(1+len(dataframes))]))
@@ -927,4 +930,202 @@ def PlotDataframes(dataframes, cols_qtd=4,w=12,h=8):
 
     # Adjust layout
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for suptitle
+    plt.show()'''
+
+def PlotFramesPLT(dataframes,names=None,cols_qtd=4,w=11,h=1.5):
+    cmap = mpl.colormaps.get_cmap('tab20').resampled(len(dataframes))
+    colors = (np.array([cmap(i) for i in range(1+len(dataframes))]))
+    if names is None:
+        names = [f'S{i+1}' for i in range(len(dataframes))]
+    nc = cols_qtd  # Número de colunas
+    nr = -(-dataframes[0].shape[1] // nc)  # Cálculo do número de linhas (ceil)
+    h = h*nr
+    # Criar figura e subplots
+    fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(w, h))
+    fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
+                    #wspace=0.5, hspace=0.001
+                    )
+    fig.add_gridspec(wspace=0.05, hspace=0.05)
+    
+    # Garantir que `axes` seja sempre uma matriz 2D
+    if nr == 1 and nc == 1:
+        axes = np.array([[axes]])  # Se for um único subplot, ajusta para matriz 2D
+    elif nr == 1 or nc == 1:
+        axes = np.reshape(axes, (-1, nc))  # Se for linha ou coluna única, ajusta matriz corretamente
+    
+    axes = axes.flatten() 
+    # Plot each column in a subplot
+    for i, col in enumerate(dataframes[0].columns):
+        ax = axes[i]
+        for j,df in enumerate(dataframes):
+            ax.plot(df.index, df[col], label=names[j], color=colors[j])
+        ax.set_title(col, fontsize=8)
+        ax.tick_params(axis="both", labelsize=8)
+        ax.legend(fontsize=7,ncol=len(dataframes))
+        ax.grid(True)
+        if i< nr*nc-cols_qtd: 
+            ax.set_xlabel('')
+            ax.tick_params(labelleft=False,labelsize=0.1,axis='x',colors='1',)
+
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
     plt.show()
+
+def PlotFramesPLY(dataframes, names=None, cols_qtd=4, w=1100, h=200):
+    """
+    Plota colunas de múltiplos DataFrames em uma grade de subplots com Plotly.
+    
+    Parameters:
+    -----------
+    dataframes : list[pd.DataFrame]
+        Lista de DataFrames a serem plotados.
+    names : list[str], optional
+        Nomes das séries para a legenda.
+    cols_qtd : int
+        Número de colunas no layout de subplots.
+    w : int
+        Largura total da figura em pixels.
+    h : int
+        Altura base por LINHA em pixels.
+    """
+    if names is None:
+        names = [f'S{i+1}' for i in range(len(dataframes))]
+        
+    # Gera a paleta de cores proporcional ao número de DataFrames
+    palette = px.colors.qualitative.Dark24
+    colors = [palette[j % len(palette)] for j in range(len(dataframes))]
+    
+    # Número de variáveis/colunas a plotar
+    num_vars = dataframes[0].shape[1]
+    
+    # Cálculo do número de linhas necessárias
+    nc = cols_qtd
+    nr = int(np.ceil(num_vars / nc))
+    
+    # Títulos para cada subplot com base nos nomes das colunas
+    subplot_titles = [str(col) for col in dataframes[0].columns]
+    
+    # Cria a estrutura de subplots
+    fig = make_subplots(
+        rows=nr, 
+        cols=nc, 
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.08,
+        horizontal_spacing=0.05
+    )
+    
+    # Itera sobre cada coluna do DataFrame
+    for i, col in enumerate(dataframes[0].columns):
+        # Determina a linha e coluna (índices 1-based para o Plotly)
+        row = (i // nc) + 1
+        col_idx = (i % nc) + 1
+        
+        # Plota a linha correspondente de CADA DataFrame no subplot atual
+        for j, df in enumerate(dataframes):
+            # A legenda só deve ser registrada no primeiro subplot (i == 0) para não duplicar
+            show_in_legend = (i == 0)
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[col],
+                    mode='lines',
+                    name=names[j],
+                    legendgroup=names[j],  # Agrupa as séries de mesmo nome entre subplots
+                    showlegend=show_in_legend,
+                    line=dict(color=colors[j], width=1.5)
+                ),
+                row=row, 
+                col=col_idx
+            )
+            
+    # Configurações do layout geral
+    fig.update_layout(
+        width=w,
+        height=h * nr,  # Ajusta a altura dinâmica proporcionalmente às linhas
+        template="plotly_white",
+        margin=dict(t=50, b=40, l=40, r=40),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    
+    # Ajusta os títulos dos subplots para um tamanho menor (similar ao fontsize=8)
+    fig.for_each_annotation(lambda a: a.update(font=dict(size=10)))
+    
+    # Adiciona linhas de grade suaves a todos os eixos
+    fig.update_xaxes(showgrid=True, gridwidth=0.5, gridcolor='LightGray')
+    fig.update_yaxes(showgrid=True, gridwidth=0.5, gridcolor='LightGray')
+
+    return fig
+
+def PlotSTFT(x,fs,nperseg=1024,noverlap=None):
+    
+    t = np.arange(len(x))*(1/fs)
+
+    x_env = hilbert(x)
+    x_env = np.abs(x_env)
+    f, t_segment, Zxx = stft(x, fs=fs, nperseg=nperseg,noverlap=noverlap)
+    f2, t_segment2, Zxx2 = stft(x_env, fs=fs, nperseg=nperseg,noverlap=noverlap)
+    Zxx = np.abs(Zxx)
+    Zxx2 = np.abs(Zxx2)
+    # 2. Criação da Estrutura com Subplots Lado a Lado
+    fig = make_subplots(
+        rows=1, cols=2,
+        shared_xaxes=True,
+        subplot_titles=('Espectrograma STFT (Sinal Bruto)', 'Espectrograma STFT (Envelope)'),
+        horizontal_spacing=0.08
+    )
+
+    # 3. Adiciona o primeiro Espectrograma (Sinal Original)
+    fig.add_trace(
+        go.Heatmap(
+            z=Zxx,
+            x=t_segment,
+            y=f,
+            colorscale='Viridis',
+            zsmooth='fast',  # Equivalente ao shading='gouraud' do Matplotlib
+            showscale=False  # Mantém a Colorbar apenas no segundo subplot para não poluir
+        ),
+        row=1, col=1
+    )
+
+    # 4. Adiciona o segundo Espectrograma (Envelope)
+    fig.add_trace(
+        go.Heatmap(
+            z=Zxx2,
+            x=t_segment2,
+            y=f2,
+            colorscale='Viridis',
+            zsmooth='fast',
+            colorbar=dict(
+                title='Magnitude',
+                len=1.0  # Ajusta a altura da barra lateral de cores
+            )
+        ),
+        row=1, col=2
+    )
+
+    # 5. Configuração Geral do Layout e Rótulos dos Eixos
+    fig.update_layout(
+        title_text="Análise de Espectrogramas STFT",
+        template="plotly_white",
+        width=1200,
+        height=500,
+        margin=dict(t=80, b=50, l=60, r=60)
+    )
+
+    # Rótulos dos Eixos X e Y para ambos os subplots
+    fig.update_xaxes(title_text="Tempo (Segundos)", row=1, col=1)
+    fig.update_xaxes(title_text="Tempo (Segundos)", row=1, col=2)
+
+    fig.update_yaxes(title_text="Frequência (Hz)", row=1, col=1)
+    fig.update_yaxes(title_text="Frequência (Hz)", row=1, col=2)
+
+    fig.show()
+    
