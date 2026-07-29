@@ -100,6 +100,28 @@ class RTLO:
         yP = (self.wO @ hP)[self.n]
         self.hP2 = hP
         return yP
+
+    def PredictSingle(self,xP,show=False):
+    
+            if self.flw != 'past': self.n = 0
+            wR,wI,wO = self.wR,self.wI,self.wO
+            hP,hU,hL = self.hP2.copy(),self.hP2.copy(),self.hP2.copy()
+            
+    
+            uP = ( wR @ hP) + ( wI @ xP)
+            
+            
+            hP = hP*(1-1/self.τ) + Activation(uP,self.act)/self.τ
+
+    
+            yP = ( wO @ hP)
+
+
+            yP = yP[self.n]
+
+            self.hP2 = hP
+
+            return yP
     
     def PredictIntr(self,xP,xL,xU,ep,show=False):
 
