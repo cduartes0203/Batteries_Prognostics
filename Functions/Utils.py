@@ -701,3 +701,78 @@ def read_pkl(path):
     with open(path, 'rb') as f:
         data = pickle.load(f)
     return data
+
+def PrepareData(df_RS, df_HI, nX, nY, mY=0, nZ=1, mode='past'):
+    """
+    Prepara e alinha as janelas temporais para os modelos de predição (X, Y) e clusterização (Z).
+    
+    Parâmetros:
+    -----------
+    df_RS : pd.DataFrame ou np.ndarray (K x 3)
+        Série temporal multidimensional para clusterização.
+    df_HI : pd.DataFrame, pd.Series ou np.ndarray (K x 1)
+        Série temporal monodimensional para predição autoregressiva.
+    nX : int
+        Tamanho da janela de dados passados para o input X.
+    nY : int
+        Tamanho da janela de dados futuros para o output Y (modo 'ahead') ou tamanho total de Y (modo 'past').
+    mY : int, default=0
+        Quantidade de dados PASSADOS adicionados à janela Y no modo 'ahead'. Ignorado no modo 'past'.
+    nZ : int, default=1
+        Tamanho da janela de dados passados para Z.
+    mode : str, 'past' ou 'ahead'
+        Estratégia de construção da janela de saída Y.
+        
+    Retorna:
+    --------
+    Zs, Xs, Ys : np.ndarray
+        Arrays contendo as janelas alinhadas.
+    """
+    ST = np.array(df_HI).ravel()
+    RS = np.array(df_RS)
+    K = len(ST)
+
+    # 1. Determina o menor k possível com base nas janelas passadas (nX, nZ e mY se 'ahead')
+    if mode == 'ahead':
+        k_inicio = max(nX, nZ, mY) - 1
+        k_fim = K - nY - 1  # Garante que k + nY não ultrapasse K - 1
+    elif mode == 'past':
+        if nY > nX:
+            raise ValueError("Na abordagem 'past', nY deve ser menor ou igual a nX.")
+        k_inicio = max(nX, nZ) - 1
+        k_fim = K - 2       # Garante que k + 1 não ultrapasse K - 1
+    else:
+        raise ValueError("Modo inválido. Escolha 'past' ou 'ahead'.")
+
+    # Verifica se há dados suficientes para gerar ao menos uma janela
+    if k_inicio > k_fim:
+        raise ValueError(f"Série temporal muito curta ({K} amostras) para os parâmetros fornecidos.")
+
+    Xs, Ys, Zs = [], [], []
+
+    # 2. Construção e Alinhamento das Janelas
+    for k in range(k_inicio, k_fim + 1):
+        # Input X_k: dados de ST no intervalo [k - nX + 1, k]
+        X_k = ST[k - nX + 1 : k + 1]
+        
+        # Output Y_k
+        if mode == 'past':
+            # Y_k vai de (k - nY + 2) até (k + 1) inclusive
+            Y_k = ST[k - nY + 2 : k + 2]
+        else:  # mode == 'ahead'
+            # Se mY > 0: pega de [k - mY + 1] até [k + nY]
+            # Se mY = 0: cai no comportamento original [k + 1] até [k + nY]
+            Y_k = ST[k - mY + 1 : k + 1 + nY]
+
+        # Input Z_k para Clusterização
+        if nZ == 1:
+            Z_k = RS[k]
+        else:
+            Z_k = RS[k - nZ + 1 : k + 1]
+
+        Xs.append(X_k)
+        Ys.append(Y_k)
+        Zs.append(Z_k.flatten())
+
+    # Preservando o retorno original (retirando a última amostra como no seu código)
+    return np.array(Zs)[:-1], np.array(Xs)[:-1], np.array(Ys)[:-1]

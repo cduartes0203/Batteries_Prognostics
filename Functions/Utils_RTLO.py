@@ -12,29 +12,6 @@ def ResizeSignal(data, m):
     
     return np.interp(x_new, x_old, data)
 
-def PrepareDataPast(sig, n, m):
-    X, Y = [], []
-    s = n - m + 1 
-    for i in range(len(sig) - n - 1):
-        X.append(sig[i : i + n])
-        Y.append(sig[i + s : i + s + m])
-    return np.array(X)[:-1], np.array(Y)[:-1]
-
-def PrepareDataAhead(sig, n, m):
-    X, Y = [], []
-    s = n - m + 1 
-    for i in range(len(sig)-n-m+1):
-        X.append(sig[i : i + n])
-        Y.append(sig[i + n : i +n+ m])
-    return np.array(X)[:-1], np.array(Y)[:-1]
-
-def PrepareData(sig,n,m,mode='past'):
-    if mode == 'past':
-        return PrepareDataPast(sig, n, m)
-    elif mode == 'ahead':
-        return PrepareDataAhead(sig, n, m)
-
-
 def XavierUniform(shape,sd):
     np.random.seed(sd)
     n_in, n_out = shape
