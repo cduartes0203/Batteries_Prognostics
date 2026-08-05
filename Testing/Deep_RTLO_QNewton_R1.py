@@ -2,7 +2,7 @@ import numpy as np
 from Functions.Utils_RTLO import *
 
 class RTLO:
-    def __init__(self, nI, nR, nO, ηS=[0.1, 0.1, 0.1], τ=10, mode='past', act='tanh'):
+    def __init__(self, nI, nR, nO, ηS=[0.1], τ=10, mode='past', act='tanh', m_history=10):
         np.random.seed(42)
         
         if isinstance(nR, (int, np.integer)):
@@ -11,7 +11,6 @@ class RTLO:
             self.nR = list(nR)
             
         self.n_layers = len(self.nR)
-        
         self.k = 1
         self.j = nI - 1
         self.t = np.array([])
@@ -38,26 +37,18 @@ class RTLO:
         
         self.uP = [np.zeros(size) for size in self.nR]
         self.uP2 = [np.zeros(size) for size in self.nR]
-        
-        self.pS = [np.zeros((self.nR[l], self.nR[l])) for l in range(self.n_layers)]
-        self.qS = [np.zeros((self.nR[l], (nI + 1) if l == 0 else (self.nR[l-1] + 1))) for l in range(self.n_layers)]
 
         # Pesos de Entrada e Inter-Camadas
         self.wI = []
-        # Camada 0: recebe a entrada externa (nI + 1)
         self.wI.append(XavierUniform([self.nR[0], nI + 1], sd=42))
-        # Camadas seguintes l: recebem a saída da camada l-1 mais o termo de bias (+1)
         for l in range(1, self.n_layers):
             self.wI.append(XavierUniform([self.nR[l], self.nR[l-1] + 1], sd=42 + l))
 
-        # Pesos Recorrentes para cada camada
+        # Pesos Recorrentes
         self.wR = [XavierUniform([self.nR[l], self.nR[l]], sd=41 + l) for l in range(self.n_layers)]
         
-        # Pesos de Saída conectados à ÚLTIMA camada oculta
+        # Pesos de Saída
         self.wO = XavierUniform([nO, self.nR[-1]], sd=40)
-        
-        # Feedback de Erro
-        self.BS = [XavierUniform([self.nR[l], nO], sd=39 + l) for l in range(self.n_layers)]
 
         self.yP, self.yR, self.yL, self.yU = [np.array([]) for i in range(4)]
         self.yP_hist = np.zeros(self.nI)
@@ -68,12 +59,77 @@ class RTLO:
         self.wI_hist = [[] for _ in range(self.n_layers)]
         self.wO_hist = []
 
-        self.rR = 1e-9
-        self.rP = 1e-10
-        self.rL = 1e-11
-        self.rU = 1e-12
-        self.rRsum = 0
-        self.rulR, self.rulP, self.rulL, self.rulU = [np.array([]) for i in range(4)]
+        # =====================================================================
+        # ESTRUTURAS DE MEMÓRIA DO L-BFGS
+        # =====================================================================
+        self.m_history = m_history
+        self.s_history = []  # s_k = w_k - w_{k-1}
+        self.y_history = []  # y_k = g_k - g_{k-1}
+        self.g_prev = None
+        self.w_prev = None
+
+    def _pack_params(self):
+        """ Achata e empacota todos os parâmetros wO, wI e wR em um vetor único """
+        params = [self.wO.flatten()]
+        for l in range(self.n_layers):
+            params.append(self.wI[l].flatten())
+            params.append(self.wR[l].flatten())
+        return np.concatenate(params)
+
+    def _unpack_params(self, w_vec):
+        """ Desempacota o vetor único de volta para os atributos de pesos do modelo """
+        idx = 0
+        shape_wO, size_wO = self.wO.shape, self.wO.size
+        self.wO = w_vec[idx:idx+size_wO].reshape(shape_wO)
+        idx += size_wO
+
+        for l in range(self.n_layers):
+            shape_wI, size_wI = self.wI[l].shape, self.wI[l].size
+            self.wI[l] = w_vec[idx:idx+size_wI].reshape(shape_wI)
+            idx += size_wI
+
+            shape_wR, size_wR = self.wR[l].shape, self.wR[l].size
+            self.wR[l] = w_vec[idx:idx+size_wR].reshape(shape_wR)
+            idx += size_wR
+
+    def _lbfgs_two_loop(self, g_k):
+        """ Algoritmo L-BFGS Two-Loop Recursion """
+        q = g_k.copy()
+        alphas = []
+        k_mem = len(self.s_history)
+
+        # Loop 1: Direção Regressiva
+        for i in reversed(range(k_mem)):
+            s_i = self.s_history[i]
+            y_i = self.y_history[i]
+            rho_i = 1.0 / (np.dot(y_i, s_i) + 1e-10)
+            
+            alpha_i = rho_i * np.dot(s_i, q)
+            alphas.append(alpha_i)
+            q -= alpha_i * y_i
+
+        alphas.reverse()
+
+        # Factor de Escalonamento Inicial gamma_k
+        if k_mem > 0:
+            s_last = self.s_history[-1]
+            y_last = self.y_history[-1]
+            gamma_k = np.dot(s_last, y_last) / (np.dot(y_last, y_last) + 1e-10)
+        else:
+            gamma_k = 1.0
+
+        r = gamma_k * q
+
+        # Loop 2: Direção Progressiva
+        for i in range(k_mem):
+            s_i = self.s_history[i]
+            y_i = self.y_history[i]
+            rho_i = 1.0 / (np.dot(y_i, s_i) + 1e-10)
+            
+            beta = rho_i * np.dot(y_i, r)
+            r += s_i * (alphas[i] - beta)
+
+        return -r  # Direção de atualização d_k
 
     def PredSingle(self, x):
         curr_in = np.append(x, 1)
@@ -91,44 +147,85 @@ class RTLO:
     def fit(self, xP, yR):
         if self.flw != 'past': self.n = 0
         xP = np.append(xP, 1)
-        η1, η2, η3 = self.ηS
         
         curr_in = xP
         new_uP = []
         new_hP = []
+        
+        # Entradas acumuladas em cada camada para o cálculo do gradiente
+        layer_inputs = [curr_in]
 
-        # Passagem Direta (Forward) através das camadas ocultas
+        # 1. Forward Pass
         for l in range(self.n_layers):
             u = self.wR[l] @ self.hP[l] + self.wI[l] @ curr_in
             h = self.hP[l] * (1 - 1 / self.τ) + Activation(u, self.act) / self.τ
             new_uP.append(u)
             new_hP.append(h)
             curr_in = np.append(h, 1)
+            layer_inputs.append(curr_in)
 
-        # Cálculo da Saída usando a última camada
         yP = self.wO @ new_hP[-1]
-        eS = yR - yP
+        eS = yR - yP  # Erro de saída (yR - yP)
 
-        # Atualização dos Traços e Pesos
-        curr_x = xP
+        # 2. Cálculo Exato dos Gradientes (Loss = 0.5 * ||eS||^2 => dL/dyP = -eS)
+        g_O = - np.outer(eS, new_hP[-1])
+
+        grad_wI = [None] * self.n_layers
+        grad_wR = [None] * self.n_layers
+
+        # Propagação do gradiente a partir da última camada oculta
+        dh_next = - (self.wO.T @ eS)
+
+        for l in reversed(range(self.n_layers)):
+            # Derivada da ativação local
+            du = (dh_next / self.τ) * dActivation(new_uP[l], self.act)
+            
+            # Gradientes exatos em relação a wR e wI
+            grad_wR[l] = np.outer(du, self.hP[l])
+            grad_wI[l] = np.outer(du, layer_inputs[l])
+
+            # Propagação do sinal de erro para a camada anterior (se houver)
+            if l > 0:
+                # Retira a componente do bias ao retropropagar
+                dh_next = self.wI[l][:, :-1].T @ du
+
+        # Concatenar todos os gradientes em um único vetor g_k
+        grad_list = [g_O.flatten()]
         for l in range(self.n_layers):
-            self.pS[l] = np.outer(dActivation(self.uP[l], self.act), self.hP[l]) / self.τ + (1 - 1 / self.τ) * self.pS[l]
-            self.qS[l] = np.outer(dActivation(self.uP[l], self.act), curr_x) / self.τ + (1 - 1 / self.τ) * self.qS[l]
+            grad_list.append(grad_wI[l].flatten())
+            grad_list.append(grad_wR[l].flatten())
+        
+        g_k = np.concatenate(grad_list)
+        w_k = self._pack_params()
 
-            δRS = η2 * np.outer((self.BS[l] @ eS), np.ones(self.nR[l])) * self.pS[l]
-            δIS = η3 * np.outer(np.dot(self.BS[l], eS), np.ones(self.qS[l].shape[1])) * self.qS[l]
+        # 3. Atualizar Histórico de Memória do L-BFGS (s_k e y_k)
+        if self.g_prev is not None and self.w_prev is not None:
+            s_k = w_k - self.w_prev
+            y_k = g_k - self.g_prev
 
-            self.wI[l] += δIS
-            self.wR[l] += δRS
+            if np.dot(y_k, s_k) > 1e-8:  # Validação de curvatura
+                if len(self.s_history) >= self.m_history:
+                    self.s_history.pop(0)
+                    self.y_history.pop(0)
+                self.s_history.append(s_k)
+                self.y_history.append(y_k)
 
+        # 4. Direção L-BFGS Purcell
+        d_k = self._lbfgs_two_loop(g_k)
+
+        # 5. Atualização dos Pesos
+        η = self.ηS[0]
+        w_new = w_k + η * d_k
+
+        self.w_prev = w_k.copy()
+        self.g_prev = g_k.copy()
+
+        self._unpack_params(w_new)
+
+        # Salvar histórico de pesos
+        for l in range(self.n_layers):
             self.wR_hist[l].append(self.wR[l].flatten())
             self.wI_hist[l].append(self.wI[l].flatten())
-            
-            curr_x = np.append(new_hP[l], 1)
-
-        # Pesos da Saída
-        δOS = η1 * np.outer(eS, new_hP[-1])
-        self.wO += δOS
         self.wO_hist.append(self.wO.flatten())
 
         # Atualização de Estados
@@ -233,7 +330,7 @@ class RTLO:
         self.hU2 = [h.copy() for h in self.hP]
 
     def ReturnParameters(self):
-        return [self.wR, self.wI, self.wO, self.pS, self.qS, self.hP, self.hP2, self.hL2, self.hU2, self.x]
+        return [self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x]
 
     def ReceiveParameters(self, vec):
-        self.wR, self.wI, self.wO, self.pS, self.qS, self.hP, self.hP2, self.hL2, self.hU2, self.x = vec
+        self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x = vec

@@ -1984,30 +1984,33 @@ def PlotDSI_3D_PLY(teda, w=1200, h=500, start=None, ftrs=3, out=None, language='
 
     fig.show()
 
-def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=None,ftrs=3, out=None, language='pt',
-             mergeID=False,lnwdth=0.75, ftcks=7, flbl=9, fttl=8.5,
-             flgnd=7, loc=None,anchor=None, m1=4, m2=3, m3=3, ncol=1):
+def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,
+                    yi=None,yf=None,yi2=None,yf2=None,
+                    xi=None,xf=None,ftrs=3, out=None, language='en',
+             mergeID=False, m1=4, m2=3, m3=3, ncol=4):
 
     
     if language == 'pt':
         title=['Granulação Espacial do IED','Granulação Temporal do IED','Predições de RUL e HI']
-        yAxisTitle=['IED-X','IED/Ciclo','RUL/Ciclo','IS/Ciclo']
-        xAxisTitle=['IED-Y','Ciclo','Ciclo','Ciclo']
+        yAxisTitle=['IED-X','IED/Ciclo','RUL/Ciclo','IS/Ciclo','WAPE/Ciclo','WAPE/Ciclo']
+        xAxisTitle=['IED-Y','Ciclo','Ciclo','Ciclo','Ciclo','Ciclo']
         zAxisTitle=['IED-Z','IED/Ciclo','RUL/Ciclo']
-        title_rul, title_hi = ['Predição de RUL',' Predição de IS']
+        title_rul, title_hi, title_wape = ['Predição de RUL',' Predição de IS', 'WAPE das Predições']
+        wapes = ['WAPE-RUL','WAPE-IS']
         names = ['VUR-R','VUR-P',None,None]
-        Tolerance = f'Tolerância-{int(uncertainty*100)}%'
+        Tolerance = f'Tol-{int(uncertainty*100)}%'
         Uncertainty = f'Incerteza'
         glabel = 'Centro-G'
 
     else:
         title=['IEDs Spatial Granulation','IEDs Temporal Granulation','RUL and HI Predictions']
-        yAxisTitle=['DSI-X','DSI/Cycle','RUL/Cycle','HI/Cycle']
-        xAxisTitle=['DSI-Y','Cycle','Cycle','Cycle']
+        yAxisTitle=['DSI-X','DSI/Cycle','RUL/Cycle','HI/Cycle','WAPE/Cycle','WAPE/Cycle']
+        xAxisTitle=['DSI-Y','Cycle','Cycle','Cycle','Cycle','Cycle']
         zAxisTitle=['DSI-Z','DSI/Cycle','RUL/Cycle']
-        title_rul, title_hi = ['RUL Prediction',' HI Prediction']
+        title_rul, title_hi, title_wape = ['RUL Prediction',' HI Prediction', 'Prediction WAPE']
+        wapes = ['WAPE-RUL','WAPE-HI']
         names = ['RUL-R','RUL-P',None,None]
-        Tolerance = f'Tolerance-{int(uncertainty*100)}%'
+        Tolerance = f'Tol-{int(uncertainty*100)}%'
         Uncertainty = f'Uncertainty'
         glabel = 'G-Center'
     uL, uU = 1-uncertainty,1+uncertainty
@@ -2040,8 +2043,8 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
     fig.subplots_adjust(left=0.04, right=0.98, top=0.88, bottom=0.12,
                     wspace=0.12, hspace=0.5)
     
-    gs = fig.add_gridspec(nrows=ftrs, ncols=3, width_ratios=[1, 1, 1.5],
-                            wspace=0.25, hspace=0.15)
+    gs = fig.add_gridspec(nrows=ftrs, ncols=4, width_ratios=[1, 0.7, 1, 0.5],
+                            wspace=0.25, hspace=0.3)
     ax1 = fig.add_subplot(gs[:, 0], projection='3d') 
     ax2 = [fig.add_subplot(gs[i, 1]) for i in range((ftrs))]
 
@@ -2054,6 +2057,17 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
         )
     ax3 = fig.add_subplot(gs_col3[0, 0])
     ax4 = fig.add_subplot(gs_col3[1, 0])
+
+    gs_col4 = gridspec.GridSpecFromSubplotSpec(
+                nrows=2, 
+                ncols=1, 
+                subplot_spec=gs[:, 3], 
+                hspace=0.05,          # Espaçamento vertical entre ax3 e ax4
+                height_ratios=[1, 1]  # Força 50% de altura para cada um!
+            )
+
+    ax5 = fig.add_subplot(gs_col4[0, 0])
+    ax6 = fig.add_subplot(gs_col4[1, 0])
 
     for i, cloud in enumerate(teda.c):
         for x in cloud.x:
@@ -2106,15 +2120,18 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
     
     ax1.scatter([], [], [], color='black', marker='+', s=m1*25,linewidths=0.75, label=glabel)
     ax1.set_title(title[0])
-    ax1.set_xlabel(xAxisTitle[0], fontsize=flbl)
-    ax1.set_ylabel(yAxisTitle[0], fontsize=flbl)
-    ax1.set_zlabel(zAxisTitle[0], fontsize=flbl)
-    ax1.legend(fontsize=flgnd, facecolor="#d9d9d9", framealpha=1,loc=loc,bbox_to_anchor=anchor, ncol=ncol)
+    ax1.set_xlabel(xAxisTitle[0], fontsize='small')
+    ax1.set_ylabel(yAxisTitle[0], fontsize='small')
+    ax1.set_zlabel(zAxisTitle[0], fontsize='small')
+    ax1.legend(fontsize='small', facecolor="#d9d9d9", framealpha=1,
+               loc='lower center',
+               bbox_to_anchor=(0.5, -0.2), 
+               ncol=ncol)
     #ax1.set_facecolor("#727272")  # Dark gray background
     # Set pane colors to a light gray shade
-    ax1.w_xaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
-    ax1.w_yaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
-    ax1.w_zaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.xaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.yaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
+    ax1.zaxis.set_pane_color((0.85, 0.85, 0.85, 1.0))
     ax1.grid(color='gray', linestyle='--', linewidth=0.5)
 
     for j,ax in enumerate(ax2):
@@ -2131,8 +2148,8 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
         yticks = np.round(np.linspace(0, 1, 6), 2).tolist()[1:] + [0]
         ax.set_yticks(sorted(yticks))
         #ax.set_ylim(L-0.05*U, U+0.05*U)
-        ax.set_xlabel(xAxisTitle[1], fontsize=flbl)
-        ax.set_ylabel(yAxisTitle[1], fontsize=flbl)
+        ax.set_xlabel(xAxisTitle[1], fontsize='small')
+        ax.set_ylabel(yAxisTitle[1], fontsize='small')
         
         if j< len(ax2)-1: 
             ax.set_xlabel('')
@@ -2156,33 +2173,29 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
     
     for i, cloud in enumerate(teda.c):
         ax3.plot(cloud.t2,cloud.rulM, linestyle=' ', marker='*', markersize=m3, color=colors[i], label=None)
-    if xi is None:
-            a = teda.rulP[:int(0.2*len(teda.rulP))]
-            p = np.argmax(a)
-            xi = xS[p]
-    if xf is None:
-            a = teda.t[-1]
-            xf = int(a*1.04)
-    if yf is None:
-        a = teda.rulU[int(0.2*len(teda.rulP)):]
-        p = np.argmax(a)
-        yf = int(a[p]*1.04)
 
-    '''ax3.annotate('a)',xy=(0, 0), 
-        xytext=(20, 0),xycoords='axes points',textcoords=None,
-        fontsize='medium', verticalalignment='top', fontfamily='serif',
-        bbox=dict(facecolor='0.7', edgecolor='black', pad=3.0))'''
-    ax3.annotate(title_rul, xy=(20, 0), xytext=(int(0.75*xf), (0.8*yf)),fontsize=12,
-                 )
+
+
+    if xi is None: xi = xS[int(0.2*len(xS)):][0]
+    if xf is None: xf = int(xS[-1]*1.075)
+    if yi is None: yi = 0
+    if yf is None: 
+        rulRU = teda.rulU
+        yf = int(1.025*np.max(rulRU[int(0.25*len(rulRU)):int(0.75*len(rulRU))]))
+
+    yc = yi + 0.1*(yf-yi)
+    xc = xi + 0.05*(xf-xi)
+
+    ax3.annotate(title_rul, xy=(xc,yc),fontsize='medium')
     ax3.set_title(title[-1])
     ax3.set_xlabel(None)
     ax3.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-    ax3.set_ylabel(yAxisTitle[2], fontsize=flbl)
-    ax3.set_xlim(xi, xf)
-    ax3.set_ylim(yi, yf)
+    ax3.set_ylabel(yAxisTitle[2], fontsize='small')
+    ax3.set_xlim(xi,xf)
+    ax3.set_ylim(yi,yf)
     ax3.set_facecolor("#d9d9d9") 
     ax3.grid(True, linestyle='--', alpha=0.6)
-    ax3.legend(frameon=True,loc='lower left', fontsize='small',ncols=2)
+    ax3.legend(frameon=True,loc='upper right', fontsize='small',ncols=1)
 
     ax4.plot(xS, teda.hiR, label='HI-R', linestyle='-', linewidth=1.5, color='black')
     ax4.plot(xS, teda.hiP, label='HI-P', linestyle='-',marker='o',markersize=m3, linewidth=1.25, color='blue')
@@ -2191,19 +2204,43 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,yi=None,yf=None,xi=None,xf=N
     ax4.fill_between(xS, teda.hiL, teda.hiU,
                              label=Uncertainty,
                              color ='c',alpha=.3,)
-    a = teda.hiU[int(0.2*len(teda.hiU)):]
-    p = np.argmax(a)
-    yf = (a[p]*1.04)
 
-    ax4.annotate(title_hi, xy=(20, 0), xytext=(int(0.75*xf), (0.8*yf)),fontsize=12,
-                     )
-    ax4.set_xlabel(xAxisTitle[3], fontsize=flbl)
-    ax4.set_ylabel(yAxisTitle[3], fontsize=flbl)
+    hiL = np.min(teda.hiL[int(0.2*len(xS)):])
+    hiU = np.max(teda.hiU[int(0.2*len(xS)):])
+
+    if yi2 is None: 
+        yi2 = hiL - (5/90) * (hiU-hiL)
+
+    if yf2 is None: 
+        yf2 = hiU + (5/90) * (hiU-hiL)
+
+    yc = yi2 + 0.1*(yf2-yi2)
+
+    ax4.annotate(title_hi, xy=(xc,yc),fontsize='medium')
+    ax4.set_xlabel(xAxisTitle[3], fontsize='small')
+    ax4.set_ylabel(yAxisTitle[3], fontsize='small')
     ax4.set_xlim(xi, xf)
-    ax4.set_ylim(yi, yf)
+    ax4.set_ylim(yi2, yf2)
     ax4.set_facecolor("#d9d9d9") 
     ax4.grid(True, linestyle='--', alpha=0.6)
     ax4.legend(frameon=True, fontsize='small')
+
+    end = min(len(xS),len(teda.wape_HI_hist))
+    ax5.annotate(wapes[0], xy=(0.55,0.85),xycoords='axes fraction',fontsize='medium')
+    ax5.plot(xS[:end],teda.wape_RUL_hist[:end], label=wapes[1], linestyle='-', linewidth=1.25, color='blue')
+    ax5.set_title(title_wape)
+    ax5.set_xlabel(None)
+    ax5.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    ax5.set_ylabel(yAxisTitle[4], fontsize='small')
+    ax5.set_facecolor("#d9d9d9") 
+    ax5.grid(True, linestyle='--', alpha=0.6)
+
+    ax6.annotate(wapes[1], xy=(0.55,0.85),xycoords='axes fraction',fontsize='medium')
+    ax6.plot(xS[:end],teda.wape_HI_hist[:end], label=wapes[0], linestyle='-', linewidth=1.25, color='red')
+    ax6.set_ylabel(yAxisTitle[5], fontsize='small')
+    ax6.set_xlabel(xAxisTitle[5], fontsize='small')
+    ax6.set_facecolor("#d9d9d9") 
+    ax6.grid(True, linestyle='--', alpha=0.6)
 
     if mergeID: fig.text(0.5, 0.1, merged_track, fontsize=10, ha='center', va='bottom', transform=fig.transFigure)
     if out is not None and title is not None:
