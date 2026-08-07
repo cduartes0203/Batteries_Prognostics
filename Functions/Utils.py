@@ -703,6 +703,11 @@ def read_pkl(path):
     return data
 
 def PrepareData(df_RS, df_HI, nX, nY, mY=0, nZ=1, mode='past'):
+
+    if mode == 1:
+        mode = 'ahead'
+    elif mode == 0:
+        mode = 'past'
     """
     Prepara e alinha as janelas temporais para os modelos de predição (X, Y) e clusterização (Z).
     

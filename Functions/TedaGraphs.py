@@ -2227,6 +2227,14 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,
 
     end = min(len(xS),len(teda.wape_HI_hist))
     ax5.annotate(wapes[0], xy=(0.55,0.85),xycoords='axes fraction',fontsize='medium')
+    ax5.annotate(
+                    f'{teda.wape_RUL_hist[-1]:.3f}',
+                      xy=(xS[-1],teda.wape_RUL_hist[-1]), xycoords='data',
+                xytext=(0.90, 0.40),
+                textcoords='axes fraction',fontsize='small',
+                arrowprops=dict(facecolor='black', shrink=0.05, width=0.01,headwidth=5,headlength=5),
+                horizontalalignment='right', 
+                verticalalignment='top')
     ax5.plot(xS[:end],teda.wape_RUL_hist[:end], label=wapes[1], linestyle='-', linewidth=1.25, color='blue')
     ax5.set_title(title_wape)
     ax5.set_xlabel(None)
@@ -2236,16 +2244,24 @@ def PlotDSI_3D_PLT(teda,uncertainty=0.25, w=15, h=4,
     ax5.grid(True, linestyle='--', alpha=0.6)
 
     ax6.annotate(wapes[1], xy=(0.55,0.85),xycoords='axes fraction',fontsize='medium')
+    ax6.annotate(
+                f'{teda.wape_HI_hist[-1]:.3f}',
+                  xy=(xS[-1],teda.wape_HI_hist[-1]), xycoords='data',
+            xytext=(0.90, 0.40),
+            textcoords='axes fraction',fontsize='small',
+            arrowprops=dict(facecolor='black', shrink=0.05, width=0.01,headwidth=5,headlength=5),
+            horizontalalignment='right', 
+            verticalalignment='top')
+    
+            #arrowprops=dict(facecolor='black', width=0.01,headwidth=5))
     ax6.plot(xS[:end],teda.wape_HI_hist[:end], label=wapes[0], linestyle='-', linewidth=1.25, color='red')
     ax6.set_ylabel(yAxisTitle[5], fontsize='small')
     ax6.set_xlabel(xAxisTitle[5], fontsize='small')
     ax6.set_facecolor("#d9d9d9") 
     ax6.grid(True, linestyle='--', alpha=0.6)
-
     if mergeID: fig.text(0.5, 0.1, merged_track, fontsize=10, ha='center', va='bottom', transform=fig.transFigure)
     if out is not None and title is not None:
         plt.savefig(out, dpi=500, transparent=False)
-    
     plt.show()
 
 
