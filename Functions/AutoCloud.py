@@ -109,9 +109,25 @@ class AutoCloud:
 		self.nI = nI
 		self.nR = nR
 		self.nO = nO
-		self.N1 = ηS[0]
-		self.N2 = ηS[1]
-		self.N3 = ηS[2]
+
+		if ηS[0] < 1:
+			self.N1 = ηS[0]
+		elif ηS[0]>=1:
+			self.N1 = 1/(10**ηS[0])
+
+		if ηS[1] < 1:
+			self.N2 = ηS[1]
+		elif ηS[1]>=1:
+			self.N2 = 1/(10**ηS[1])
+
+		if ηS[2] < 1:
+			self.N3 = ηS[2]
+		elif ηS[2]>=1:
+			self.N3 = 1/(10**ηS[2])		
+
+		#self.N1 = ηS[0]
+		#self.N2 = ηS[1]
+		#self.N3 = ηS[2]
 		self.tau = tau
 		self.eol = eol
 		self.store = store
