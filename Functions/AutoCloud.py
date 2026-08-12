@@ -198,6 +198,11 @@ class AutoCloud:
 		self.eHI_Sum = 0
 		self.eHI_Diff = 0
 
+		self.wape_HI_hist2 = np.array([])
+		self.wape_HI2 = 0
+		self.eHI_Sum2 = 0
+		self.eHI_Diff2 = 0
+
 		self.εP = []
 		self.εR = []
 		self.wtaG = wtaG
@@ -282,6 +287,22 @@ class AutoCloud:
 		self.WAPE_RUL()
 		self.WAPE_HI()
 
+	def PredictWindow(self,y,show=False):
+		ws = self.alfa/np.sum(self.alfa)
+		p = (np.array([w*cloud.rnn.PredictionVector(y) for cloud,w in zip(self.c,ws)]))
+		p = np.sum(p,axis=0)
+		return p	
+
+	def	WAPE_HI2(self,y,zR):
+		zP = self.PredictWindow(y,show=False)
+		t = self.k**2
+		self.eHI_Diff2 = np.sum(np.abs(zR*t - zP*t)) + self.eHI_Diff2
+		self.eHI_Sum2 = np.sum(np.abs(zR*t)) + self.eHI_Sum2
+		self.wape_HI2 = self.eHI_Diff2/self.eHI_Sum2
+
+		if self.store:
+			self.wape_HI_hist2 = np.append(self.wape_HI_hist2,self.wape_HI2)	
+			
 	def AdjustCloudMaster(self,t,x):
 
 			clouds = self.c
@@ -364,7 +385,10 @@ class AutoCloud:
 		p = (np.array([w*cloud.rnn.Predict(y) for cloud,w in zip(self.c,ws)]))
 		p = np.sum(p)
 		return p
-	
+
+
+
+
 	def DefRnnParams(self, cloud):
 		if len(self.c)>1:
 			params = self.c[-2].rnn.ReturnParameters()

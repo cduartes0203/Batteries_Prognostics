@@ -2,7 +2,8 @@ import os
 import numpy as np
 import ipynbname
 import optuna
-
+from optuna.samplers import RandomSampler
+from optuna.exceptions import TrialPruned
 
 class EarlyStoppingCallback:
     def __init__(self, patience: int):
@@ -27,6 +28,16 @@ class EarlyStoppingCallback:
         if self.trials_without_improvement >= self.patience:
             print(f"O estudo parou! O erro não diminui há {self.patience} iterações.")
             study.stop()
+
+def SelSampler(mode='auto'):
+    '''mode: auto, random,  tpe'''
+    if mode == 'auto':
+        sampler = None
+    elif mode == 'tpe':
+        sampler = optuna.samplers.TPESampler(multivariate=True,group=True,n_startup_trials=1000)
+    elif mode == 'random':
+        sampler=RandomSampler()
+    return sampler
 
 def df_ParamsTable(names,FileName):
     if len(names) == 13:

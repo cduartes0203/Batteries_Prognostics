@@ -156,6 +156,21 @@ class RTLO:
         yP = (self.wO @ self.hP2[-1])[self.n]
         return yP
 
+    def PredictionVector(self, x):
+        if self.flw != 'past': self.n = 0
+        xP = np.append(x.copy(), 1)
+        
+        curr_in = xP
+        for l in range(self.n_layers):
+            hP = self.hP2[l].copy()
+            uP = (self.wR[l] @ hP) + (self.wI[l] @ curr_in)
+            hP = hP * (1 - 1 / self.τ) + Activation(uP, self.act) / self.τ
+            self.hP2[l] = hP
+            curr_in = np.append(hP, 1)
+
+        yP = (self.wO @ self.hP2[-1])
+        return yP
+    
     def PredictSingle(self, xP, show=False):
         xP = np.append(xP, 1)
         if self.flw != 'past': self.n = 0
