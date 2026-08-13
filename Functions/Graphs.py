@@ -167,30 +167,98 @@ def PlotTwoScalesPLY(y1, y2,x1=None, x2=None, w=500, h=300, y1_name='y1', y2_nam
 
     fig.show()
 
-def PlotFourScales(x1, x2, y1, y2, w=7, h=4, x1_name='x1', y1_name='y1', x2_name='x2', y2_name='y2'):
-    fig, ax1 = plt.subplots(figsize=(w, h))
+def PlotMultiScalesPLY(yS, xS=None, names=None, colors=None, w=500, h=300, x_name='Cycle'):
+    n_series = len(yS)
+    if n_series == 0:
+        raise ValueError("A lista 'yS' deve conter pelo menos uma série temporal.")
 
-    # --- Série 1 (Eixos Inferior e Esquerdo) ---
-    line1, = ax1.plot(x1, y1, color='blue', label=y1_name)
-    ax1.set_xlabel(x1_name, color='blue')
-    ax1.set_ylabel(y1_name, color='blue')
-    ax1.tick_params(axis='both', labelcolor='blue')
+    # 1. Tratamento do eixo X
+    if xS is None:
+        xS = [np.arange(len(y)) for y in yS]
 
-    # --- Série 2 (Eixos Superior e Direito) ---
-    # twinx() cria o eixo Y independente, twiny() cria o eixo X independente
-    ax2 = ax1.twinx().twiny() 
+    # 2. Tratamento dos Nomes
+    if names is None:
+        names = [f'y{i+1}' for i in range(n_series)]
 
-    line2, = ax2.plot(x2, y2, color='red', label=y2_name, linestyle='--')
-    ax2.set_xlabel(x2_name, color='red')
-    ax2.set_ylabel(y2_name, color='red')
-    ax2.tick_params(axis='both', labelcolor='red')
+    # 3. Cores dinâmicas
+    if colors is None:
+        palette = px.colors.qualitative.Plotly
+        colors = [palette[i % len(palette)] for i in range(n_series)]
 
-    # Ajuste fino: move o label do eixo X2 para o topo para não sobrepor
-    ax2.xaxis.set_label_position('top') 
-    ax2.xaxis.tick_top()
+    # 4. Cálculo do Espaçamento dos Eixos Laterais
+    n_right_axes = n_series // 2
+    n_left_axes = (n_series - 1) - n_right_axes
 
-    fig.tight_layout()
-    plt.show()
+    step = 0.045 if n_series > 8 else 0.06
+
+    left_margin = step * n_left_axes
+    right_margin = step * n_right_axes
+
+    left_domain = left_margin
+    right_domain = 1.0 - right_margin - 0.02 
+
+    fig = go.Figure()
+
+    layout_update = dict(
+        width=w, 
+        height=h,
+        xaxis=dict(title=x_name, domain=[left_domain, right_domain]),
+        template="plotly_white",
+        legend=dict(
+            orientation="v", 
+            y=1.0, 
+            x=1.00, 
+            xanchor="left"
+        ),
+        margin=dict(l=20, r=20, t=30, b=80)
+    )
+
+    # 5. Construção dos Eixos Y e Traces
+    for i in range(n_series):
+        axis_name = f'yaxis{i+1}' if i > 0 else 'yaxis'
+        
+        fig.add_trace(
+            go.Scatter(
+                x=xS[i], 
+                y=yS[i], 
+                name=names[i], 
+                line=dict(color=colors[i]),
+                yaxis=f'y{i+1}' if i > 0 else 'y'
+            )
+        )
+
+        # Título configurado com HTML/CSS para rotação horizontal
+        title_html = f"<span style='writing-mode: horizontal-tb; display: inline-block;'><b>{names[i]}</b></span>"
+
+        # Configuração base do eixo Y
+        axis_config = dict(
+            title=dict(
+                text=title_html, 
+                font=dict(color=colors[i]),
+                standoff=10
+            ),
+            tickfont=dict(color=colors[i]),
+            showgrid=(i == 0)
+        )
+
+        if i > 0:
+            axis_config['overlaying'] = 'y'
+            axis_config['anchor'] = 'free'
+            
+            # Posições horizontais calculadas corretamente no nível do eixo
+            if i % 2 == 1: # Lado Direito
+                pos = right_domain + step * ((i - 1) // 2 + 1)
+                axis_config['side'] = 'right'
+                axis_config['position'] = min(pos, 0.98)
+            else: # Lado Esquerdo
+                pos = left_domain - step * (i // 2)
+                axis_config['side'] = 'left'
+                axis_config['position'] = max(pos, 0.0)
+
+        layout_update[axis_name] = axis_config
+
+    fig.update_layout(**layout_update)
+    fig.show()
 
 def PlotPredError(rtlo,w=9,h=3):
     s = len(rtlo.yWAPE)

@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from Testing.DRTLO_QN_R1 import *
+from Testing.DRTLO_QN_R2 import *
 
 class DataCloud:
 	N=0

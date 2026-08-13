@@ -17,7 +17,11 @@ class AutoCloud:
 		self.nI = nI
 		self.nR = nR
 		self.nO = nO
-		self.N1 = ηS[0]
+		if ηS[0] < 1:
+			self.N1 = ηS[0]
+		elif ηS[0]>=1:
+			self.N1 = 1/(10**ηS[0])
+
 		self.tau = tau
 		self.eol = eol
 		self.store = store
@@ -87,6 +91,11 @@ class AutoCloud:
 		self.wape_HI = 0
 		self.eHI_Sum = 0
 		self.eHI_Diff = 0
+
+		self.wape_HI_hist2 = np.array([])
+		self.wape_HI2 = 0
+		self.eHI_Sum2 = 0
+		self.eHI_Diff2 = 0
 
 		self.εP = []
 		self.εR = []
@@ -200,6 +209,22 @@ class AutoCloud:
 	def teda_WAPE(self):
 		self.WAPE_RUL()
 		self.WAPE_HI()
+
+	def PredictWindow(self,y,show=False):
+		ws = self.alfa/np.sum(self.alfa)
+		p = (np.array([w*cloud.rnn.PredictionVector(y) for cloud,w in zip(self.c,ws)]))
+		p = np.sum(p,axis=0)
+		return p	
+
+	def	WAPE_HI2(self,y,zR):
+		zP = self.PredictWindow(y,show=False)
+		t = self.k**2
+		self.eHI_Diff2 = np.sum(np.abs(zR*t - zP*t)) + self.eHI_Diff2
+		self.eHI_Sum2 = np.sum(np.abs(zR*t)) + self.eHI_Sum2
+		self.wape_HI2 = self.eHI_Diff2/self.eHI_Sum2
+
+		if self.store:
+			self.wape_HI_hist2 = np.append(self.wape_HI_hist2,self.wape_HI2)	
 
 	def AdjustCloudMaster(self,t,x):
 			"""
@@ -512,8 +537,8 @@ class AutoCloud:
 					variance = ((nI - 1) * varianceI + (nJ - 1) * varianceJ)/(nI + nJ - 2)
 					tipicality = ((nI*tipicalityI)+(nJ*tipicalityJ))/(nI + nJ)
 
-					newCloud = DataCloud(X,self.k-1,self.gCreated,self.rho,self.m,self.nI,self.nR,self.nO,
-									[self.N1,self.N2,self.N3],self.tau,self.mode, self.act)
+					newCloud = DataCloud(X, self.k-1, self.gCreated, self.rho, self.m, self.nI, self.nR, self.nO,
+                     [self.N1], self.tau, self.mode, self.act)
 					for id in trackI:
 						newCloud.track.append(id)
 					for id in trackJ:
