@@ -147,13 +147,15 @@ def Optimize(
         df1 = pd.read_csv(out_path)
         df_stdy = pd.concat([df1, df2], ignore_index=True)
     
-    else: df_stdy = df2
-    
+    df_stdy = df_stdy.drop_duplicates()
     df_stdy.to_csv(out_path, index=False)
-    opt_path = os.path.join(study_dir,f'opt_{len(os.listdir(study_dir))-1}.csv')
-    
-    if df2.shape[0] > 0: df2.to_csv(opt_path, index=False)
 
-    return [df_stdy, df2 ]
+    if not SingleObj: 
+        Sum = df_stdy.iloc[:, 0] + df_stdy.iloc[:, 1]
+        df_stdy = df_stdy.loc[Sum.sort_values(ascending=False).index]
+    elif SingleObj:
+        Sum = df_stdy.iloc[:, 0] + 0
+        df_stdy = df_stdy.loc[Sum.sort_values(ascending=False).index]
+    return df_stdy
 
 
