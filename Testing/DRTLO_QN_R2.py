@@ -23,7 +23,6 @@ class RTLO:
 
         self.ηS = np.array(ηS)
         self.τ = τ
-        self.ρ = 0.003
 
         self.x = np.zeros(nI + 1)
         

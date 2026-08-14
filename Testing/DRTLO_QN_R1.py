@@ -23,7 +23,6 @@ class RTLO:
 
         self.ηS = np.array(ηS)
         self.τ = τ
-        self.ρ = 0.003
 
         self.x = np.zeros(nI + 1)
         
@@ -330,7 +329,12 @@ class RTLO:
         self.hU2 = [h.copy() for h in self.hP]
 
     def ReturnParameters(self):
-        return [self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x]
+        return [self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x,
+                self.s_history, self.y_history, self.g_prev, self.w_prev]
 
     def ReceiveParameters(self, vec):
-        self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x = vec
+        if len(vec) == 12:
+            self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x, \
+            self.s_history, self.y_history, self.g_prev, self.w_prev = vec
+        else:
+            self.wR, self.wI, self.wO, self.hP, self.hP2, self.hL2, self.hU2, self.x = vec[:8]
