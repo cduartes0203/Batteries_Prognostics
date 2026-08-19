@@ -249,6 +249,7 @@ class RTLO:
 
     def ReturnParameters(self):
         return [self.wR, self.wI, self.wO, self.pS, self.qS, self.hP, self.hP2, self.hL2, self.hU2, self.x]
+        #return self.wR, self.wI, self.wO, self.pS, self.qS, self.hP, self.hP2, self.hL2, self.hU2, self.x
 
     def ReceiveParameters(self, vec):
         self.wR, self.wI, self.wO, self.pS, self.qS, self.hP, self.hP2, self.hL2, self.hU2, self.x = vec

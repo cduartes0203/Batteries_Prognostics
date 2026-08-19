@@ -81,7 +81,7 @@ def Optimize(
             N1 = trial.suggest_int('N1', N1S[0], N1S[1])
             N2 = trial.suggest_int('N2', N2S[0], N2S[1])
             N3 = trial.suggest_int('N3', N3S[0], N3S[1])
-            τ = trial.suggest_float('τ', τS[0], τS[1])
+            τ = trial.suggest_int('τ', τS[0], τS[1])
             mode = trial.suggest_int('mode', mdS[0], mdS[1])  
             act = trial.suggest_int('act', actS[0], actS[1])  
 
