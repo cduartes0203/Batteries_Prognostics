@@ -13,10 +13,10 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 class EarlyStoppingCallback:
 
-    def __init__(self, patience: int, n_last: int = 3):
+    def __init__(self, patience: int, count: int=1, n_last: int = 3):
         self.patience = patience
-        #self.ref = ref
-        #self.count = count
+
+        self.count = count
         self.best_score = float('inf')
         self.trials_without_improvement = 0
         self.last_trials = deque(maxlen=n_last)
@@ -65,7 +65,7 @@ class EarlyStoppingCallback:
         # 3. Renderização Dinâmica no Notebook
         clear_output(wait=True)
         print("=" * 80)
-        print("BEST TRIAL")
+        print(f"BEST TRIAL - Study {self.count}")
         print("=" * 80)
         if self.best_trial_info:
             print(self.best_trial_info)
